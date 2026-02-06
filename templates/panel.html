@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuba Butik - Müşteri Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; background: #f0f2f5; }
+        
+        /* Sol Menü (Müşteri Listesi) */
+        .sidebar { width: 350px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background: #075e54; color: white; font-weight: bold; font-size: 18px; }
+        .customer-list { flex: 1; overflow-y: auto; }
+        .customer-item { padding: 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: 0.2s; display: flex; align-items: center; }
+        .customer-item:hover { background-color: #f5f5f5; }
+        .customer-item.active { background-color: #e8f5e9; border-left: 5px solid #25D366; }
+        .avatar { width: 40px; height: 40px; background: #ddd; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; }
+        
+        /* Sağ Taraf (Mesajlaşma) */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: #e5ddd5; }
+        .chat-header { padding: 15px; background: #f0f2f5; border-bottom: 1px solid #ddd; font-weight: bold; color: #333; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Mesaj Baloncukları */
+        .message { max-width: 60%; padding: 10px 15px; border-radius: 7.5px; position: relative; font-size: 14px; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); }
+        .inbound { align-self: flex-start; background: #fff; border-top-left-radius: 0; }
+        .outbound { align-self: flex-end; background: #dcf8c6; border-top-right-radius: 0; }
+        .meta { font-size: 10px; color: #999; text-align: right; margin-top: 5px; }
+
+        /* Yazma Alanı */
+        .input-area { padding: 15px; background: #f0f2f5; display: flex; gap: 10px; align-items: center; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        button { padding: 10px 25px; background: #075e54; color: #fff; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #128c7e; }
+
+        /* Boş Durum */
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; background: rgba(255,255,255,0.9); }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">Tuba Butik Panel</div>
+        <div class="customer-list" id="customerList">
+            <div style="padding:20px; text-align:center; color:#999;">Yükleniyor...</div>
+        </div>
+    </div>
+
+    <div class="chat-area">
+        <div class="chat-header" id="chatHeader">Sohbet Seçilmedi</div>
+        <div class="messages" id="messageBox">
+            <div class="empty-state">
+                <h3>Hoş Geldiniz 👋</h3>
+                <p>Mesajlaşmak için soldan bir müşteri seçin.</p>
+            </div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="Bir mesaj yazın..." onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()">Gönder</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GEÇİCİ DEMO VERİLERİ (Sistem çalışıyor mu diye) ---
+        // Backend bağlandığında burası gerçek verilerle dolacak.
+        
+        const demoCustomers = [
+            { phone: "905321112233", name: "Ayşe Yılmaz", lastMsg: "Kargom nerede?" },
+            { phone: "905554443322", name: "Fatma Demir", lastMsg: "İade kodu istiyorum." }
+        ];
+
+        function loadDemo() {
+            const list = document.getElementById('customerList');
+            list.innerHTML = "";
+            demoCustomers.forEach(c => {
+                list.innerHTML += `
+                    <div class="customer-item" onclick="selectChat('${c.phone}', '${c.name}')">
+                        <div class="avatar">${c.name[0]}</div>
+                        <div>
+                            <div style="font-weight:600">${c.name}</div>
+                            <div style="font-size:12px; color:#666;">${c.lastMsg}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function selectChat(phone, name) {
+            document.getElementById('chatHeader').innerText = name + " (" + phone + ")";
+            document.getElementById('messageBox').innerHTML = `
+                <div class="message inbound">
+                    Merhaba, siparişim kargoya verildi mi?
+                    <div class="meta">14:30</div>
+                </div>
+                <div class="message outbound">
+                    Merhaba Ayşe Hanım, kontrol ediyorum hemen.
+                    <div class="meta">14:32</div>
+                </div>
+            `;
+            // Gerçek sistemde burada API'ye gidip eski mesajları çekeceğiz.
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value;
+            if (!text) return;
+            
+            // Ekrana ekle
+            document.getElementById('messageBox').innerHTML += `
+                <div class="message outbound">
+                    ${text}
+                    <div class="meta">Şimdi</div>
+                </div>
+            `;
+            input.value = "";
+            
+            // Otomatik aşağı kaydır
+            const box = document.getElementById('messageBox');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // Sayfa açılınca demo yükle
+        window.onload = loadDemo;
+    </script>
+</body>
+</html>
