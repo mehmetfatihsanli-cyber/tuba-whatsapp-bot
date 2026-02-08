@@ -40,7 +40,7 @@ tuba_kurallar = TubaButikKurallari()
 
 # 6. Meta (WhatsApp) Ayarlari
 META_TOKEN = os.getenv("META_ACCESS_TOKEN") or os.getenv("META_TOKEN")
-PHONE_ID = os.getenv("PHONE_ID")
+PHONE_ID = os.getenv("PHONE_ID") or os.getenv("WHATSAPP_PHONE_NUMBER_ID")
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "tuba123")
 
 # --- SAYFALAR ---
@@ -135,13 +135,17 @@ def webhook_receive():
                 "direction": "inbound"
             }).execute()
 
-        # 2. AI'dan Akilli Cevap Al
+        # 2. Bu müşterinin geçmiş konuşmasını al (son 20 mesaj)
+        gecmis_konusma = get_gecmis_konusma(sender_phone) if supabase else None
+
+        # 3. AI'dan Akilli Cevap Al
         cevap = ai_assistant.mesaj_olustur(
             musteri_mesaji=msg_body,
-            musteri_telefon=sender_phone
+            musteri_telefon=sender_phone,
+            gecmis_konusma=gecmis_konusma
         )
 
-        # 3. Cevap Gonder
+        # 4. Cevap Gonder
         if cevap:
             send_whatsapp_message(sender_phone, cevap)
             
@@ -157,6 +161,37 @@ def webhook_receive():
         logger.error(f"Webhook isleme hatasi: {e}")
 
     return jsonify({"status": "received"}), 200
+
+def get_gecmis_konusma(phone, limit=20):
+    """Supabase'den bu numaranin onceki mesajlarini alir (en son gelen haric), metin olarak birlestirir (AI context icin)."""
+    if not supabase:
+        return None
+    try:
+        # En son (limit+1) mesaji al; en taze olan su anki mesaj, onu atiyoruz
+        response = (
+            supabase.table("messages")
+            .select("direction, message_body, created_at")
+            .eq("phone", phone)
+            .order("created_at", desc=True)
+            .limit(limit + 1)
+            .execute()
+        )
+        if not response.data or len(response.data) < 2:
+            return None
+        # Ilk kayit su anki mesaj; oncekileri kronolojik siraya cevir
+        oncekiler = response.data[1 : limit + 1]
+        oncekiler.reverse()
+        lines = []
+        for m in oncekiler:
+            yon = "Müşteri" if m.get("direction") == "inbound" else "Tuba Butik"
+            body = (m.get("message_body") or "").strip()
+            if body:
+                lines.append(f"{yon}: {body}")
+        return "\n".join(lines) if lines else None
+    except Exception as e:
+        logger.warning(f"Gecmis konusma alinamadi: {e}")
+        return None
+
 
 def send_whatsapp_message(phone, text):
     """Meta API kullanarak mesaj atar"""
@@ -184,5 +219,5 @@ def send_whatsapp_message(phone, text):
         return False
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port)

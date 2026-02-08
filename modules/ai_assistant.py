@@ -1,7 +1,6 @@
 import os
 import json
 import anthropic
-from modules.pinecone_manager import PineconeManager
 from modules.tuba_rules import TubaButikKurallari
 from datetime import datetime
 import logging
@@ -17,7 +16,12 @@ class TubaAIAssistant:
     def __init__(self):
         # API key'i hemen okuma, lazy loading yap
         self._claude_api_key = None
-        self.pinecone = PineconeManager()
+        self.pinecone = None
+        try:
+            from modules.pinecone_manager import PineconeManager
+            self.pinecone = PineconeManager()
+        except Exception as e:
+            logger.warning(f"Pinecone atlandi (opsiyonel): {e}")
         self.kurallar = TubaButikKurallari()
         
         # TEST MODU: Manuel sipariş verisi
@@ -153,8 +157,9 @@ class TubaAIAssistant:
             
             context = self._context_olustur(gecmis_konusma, siparis_bilgisi)
             
+            # DÜZELTİLMİŞ MODEL ADI
             response = client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=1024,
                 temperature=0.7,
                 system=self.sistem_prompt,
@@ -166,7 +171,13 @@ class TubaAIAssistant:
             return response.content[0].text
             
         except Exception as e:
-            logger.error(f"Claude hatası: {e}")
+            logger.exception(f"Claude hatası: {e}")
+            # Claude hata verirse bile iade/değişim için kısa cevap ver
+            mesaj_lower = (mesaj or "").lower()
+            if "iade" in mesaj_lower and "değişim" not in mesaj_lower:
+                return "📦 İade için: Ürünler orijinal ambalajında ve etiketli olmalı. Sipariş tesliminden itibaren 14 gün içinde iade yapabilirsiniz. Kargo ücreti müşteriye aittir. Detaylı form için WhatsApp üzerinden ileteceğimiz linki kullanabilirsiniz. Başka sorunuz var mı?"
+            if "değişim" in mesaj_lower:
+                return "🔄 Değişim için: En fazla 2 değişim hakkınız var; beden/renk değişimi yapılır. Stokta olmayan ürün için alternatif önerebiliriz. Değişim kargo ücreti müşteriye aittir. Sipariş bilginizle birlikte yazarsanız yardımcı oluruz."
             return "⚠️ Teknik bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
     
     def _format_orders(self, orders):
