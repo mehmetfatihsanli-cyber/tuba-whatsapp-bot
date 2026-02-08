@@ -5,6 +5,8 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from modules.butiksistem_client import ButikSistemClient
+from modules.ai_assistant import TubaAIAssistant
+from modules.tuba_rules import TubaButikKurallari
 import requests
 
 # 1. Ayarlari Yukle
@@ -30,10 +32,16 @@ if SUPABASE_URL and SUPABASE_KEY:
 # 3. ButikSistem Baglantisi
 butik_client = ButikSistemClient()
 
-# 4. Meta (WhatsApp) Ayarlari
-META_TOKEN = os.getenv("META_TOKEN")
+# 4. AI Asistan
+ai_assistant = TubaAIAssistant()
+
+# 5. Tuba Kurallari
+tuba_kurallar = TubaButikKurallari()
+
+# 6. Meta (WhatsApp) Ayarlari
+META_TOKEN = os.getenv("META_ACCESS_TOKEN") or os.getenv("META_TOKEN")
 PHONE_ID = os.getenv("PHONE_ID")
-VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "tuba123")  # Webhook dogrulama sifresi
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "tuba123")
 
 # --- SAYFALAR ---
 
@@ -51,14 +59,14 @@ def panel_view():
 @app.route('/api/customers', methods=['GET'])
 def get_customers():
     """Panel icin konusma listesini getirir (Supabase'den)"""
-    if not supabase: return jsonify([])
+    if not supabase: 
+        return jsonify([])
     
-    # Mesajlari tarihe gore tersten cek, her numaradan son mesaji bul (Basit versiyon)
     try:
         response = supabase.table('messages').select("*").order('created_at', desc=True).limit(50).execute()
-        # Burada veriyi isleyip tekil musteri listesi cikaracagiz (Frontend icin)
         return jsonify(response.data)
     except Exception as e:
+        logger.error(f"API hatasi: {e}")
         return jsonify({"error": str(e)})
 
 @app.route('/api/send-message', methods=['POST'])
@@ -71,10 +79,8 @@ def send_message_api():
     if not phone or not text:
         return jsonify({"error": "Eksik bilgi"}), 400
 
-    # 1. Meta API'ye Gonder
     success = send_whatsapp_message(phone, text)
     
-    # 2. Supabase'e Kaydet (Giden Mesaj)
     if supabase:
         supabase.table('messages').insert({
             "phone": phone,
@@ -107,48 +113,45 @@ def webhook_receive():
     data = request.json
     logger.info(f"Gelen Veri: {data}")
     
-    # Mesaji ayikla (Meta'nin karmasik JSON yapisindan)
     try:
         entry = data['entry'][0]
         changes = entry['changes'][0]
         value = changes['value']
         
-        if 'messages' in value:
-            message = value['messages'][0]
-            sender_phone = message['from']
-            msg_body = message['text']['body'] if 'text' in message else "Medya/Diger"
-            
-            logger.info(f"📩 Mesaj Geldi: {sender_phone} - {msg_body}")
+        if 'messages' not in value:
+            return jsonify({"status": "ok"}), 200
+        
+        message = value['messages'][0]
+        sender_phone = message['from']
+        msg_body = message['text']['body'] if 'text' in message else "Medya/Diger"
+        
+        logger.info(f"📩 Mesaj Geldi: {sender_phone} - {msg_body}")
 
-            # 1. Supabase'e Kaydet (Gelen Mesaj)
+        # 1. Supabase'e Kaydet (Gelen Mesaj)
+        if supabase:
+            supabase.table('messages').insert({
+                "phone": sender_phone,
+                "message_body": msg_body,
+                "direction": "inbound"
+            }).execute()
+
+        # 2. AI'dan Akilli Cevap Al
+        cevap = ai_assistant.mesaj_olustur(
+            musteri_mesaji=msg_body,
+            musteri_telefon=sender_phone
+        )
+
+        # 3. Cevap Gonder
+        if cevap:
+            send_whatsapp_message(sender_phone, cevap)
+            
+            # Botun cevabini da kaydet
             if supabase:
                 supabase.table('messages').insert({
                     "phone": sender_phone,
-                    "message_body": msg_body,
-                    "direction": "inbound"
+                    "message_body": cevap,
+                    "direction": "outbound"
                 }).execute()
-
-            # 2. OTOMATIK CEVAP MANTIGI (Basit Bot)
-            cevap = None
-            if "kargo" in msg_body.lower() or "nerede" in msg_body.lower():
-                # ButikSistem'e sor
-                orders = butik_client.get_orders(days=30)
-                # (Burada normalde telefon eslesmesi yapacagiz, simdilik demo cevap)
-                cevap = "📦 Siparişlerinizi kontrol ediyorum... (Sistem Test Aşamasında)"
-            
-            elif "merhaba" in msg_body.lower():
-                cevap = "👋 Merhaba! Tuba Butik asistanıyım. Size nasıl yardımcı olabilirim?"
-
-            # Eger botun cevabi varsa gonder
-            if cevap:
-                send_whatsapp_message(sender_phone, cevap)
-                # Botun cevabini da kaydet
-                if supabase:
-                    supabase.table('messages').insert({
-                        "phone": sender_phone,
-                        "message_body": cevap,
-                        "direction": "outbound"
-                    }).execute()
 
     except Exception as e:
         logger.error(f"Webhook isleme hatasi: {e}")
@@ -171,12 +174,13 @@ def send_whatsapp_message(phone, text):
     try:
         r = requests.post(url, headers=headers, json=payload)
         if r.status_code == 200:
+            logger.info(f"✅ Mesaj gonderildi: {phone}")
             return True
         else:
-            logger.error(f"Mesaj gonderilemedi: {r.text}")
+            logger.error(f"❌ Mesaj gonderilemedi: {r.text}")
             return False
     except Exception as e:
-        logger.error(f"Request hatasi: {e}")
+        logger.error(f"❌ Request hatasi: {e}")
         return False
 
 if __name__ == '__main__':

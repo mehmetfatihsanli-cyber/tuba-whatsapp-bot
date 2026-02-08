@@ -61,3 +61,8 @@ urllib3==2.6.3
 websockets==15.0.1
 Werkzeug==3.1.5
 yarl==1.22.0
+
+# Yeni Eklenenler (AI ve Vektör DB)
+pinecone-client==2.2.4
+sentence-transformers==2.5.1
+numpy==1.26.4

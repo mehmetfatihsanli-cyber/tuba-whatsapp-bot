@@ -1,0 +1,163 @@
+import os
+import anthropic
+from modules.pinecone_manager import PineconeManager
+from modules.tuba_rules import TubaButikKurallari
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
+class TubaAIAssistant:
+    """
+    Tuba Butik AI Asistanı
+    Ücretsiz ve Ücretli modları destekler
+    """
+    
+    def __init__(self):
+        # API key'i hemen okuma, lazy loading yap
+        self._claude_api_key = None
+        self.pinecone = PineconeManager()
+        self.kurallar = TubaButikKurallari()
+        
+        # Sistem promptu - Tuba Butik karakteri
+        self.sistem_prompt = """Sen Tuba Butik'in AI satış asistanısın. 
+Adın Tuba. Samimi, yardımsever ve profesyonelsin.
+
+KURALLAR:
+- Sadece stokta olan ürünleri öner
+- Fiyatları doğru söyle
+- İade süresi 14 gün, maksimum 2 değişim
+- Sohbet geçmişini hatırla
+- KVKK onayı olmayanla konuşma
+- Karmaşık sorularda detaylı yardım et
+- Basit sorularda kısa ve net cevap ver"""
+    
+    @property
+    def claude_api_key(self):
+        """Lazy loading - API key'i ilk kullanımda oku"""
+        if self._claude_api_key is None:
+            self._claude_api_key = os.getenv("ANTHROPIC_API_KEY")
+            # DEBUG: Key durumunu logla
+            if self._claude_api_key:
+                logger.info(f"✅ Claude API key loaded successfully (length: {len(self._claude_api_key)})")
+            else:
+                logger.error("❌ ANTHROPIC_API_KEY environment variable not found!")
+                logger.info(f"Available env vars: {[k for k in os.environ.keys() if 'ANTHROPIC' in k or 'API' in k]}")
+        return self._claude_api_key
+    
+    def basit_mi_karmaşik_mi(self, mesaj):
+        """
+        Mesajın basit mi karmaşık mı olduğuna karar ver
+        Basit: merhaba, fiyat, stok
+        Karmaşık: iade, değişim, ürün önerisi, şikayet
+        """
+        basit_kelimeler = ['merhaba', 'selam', 'günaydın', 'iyi günler', 'fiyat', 'ne kadar', 'stokta var mı']
+        karmaşık_kelimeler = ['iade', 'değişim', 'şikayet', 'sorun', 'kusur', 'yardım', 'öneri', 'tavsiye', 'hangi', 'uygun']
+        
+        mesaj_lower = mesaj.lower()
+        
+        # Basit kelime varsa ve karmaşık yoksa → Basit
+        if any(kelime in mesaj_lower for kelime in basit_kelimeler):
+            if not any(kelime in mesaj_lower for kelime in karmaşık_kelimeler):
+                return "basit"
+        
+        # Karmaşık kelime varsa → Karmaşık
+        if any(kelime in mesaj_lower for kelime in karmaşık_kelimeler):
+            return "karmaşık"
+        
+        # Varsayılan: Basit
+        return "basit"
+    
+    def mesaj_olustur(self, musteri_mesaji, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None):
+        """
+        Ana mesaj oluşturma fonksiyonu
+        Basit sorulara basit cevap, karmaşıklara Claude
+        """
+        
+        tur = self.basit_mi_karmaşik_mi(musteri_mesaji)
+        
+        if tur == "basit":
+            return self.basit_cevap(musteri_mesaji)
+        else:
+            return self.karmaşık_cevap(musteri_mesaji, musteri_telefon, gecmis_konusma, siparis_bilgisi)
+    
+    def basit_cevap(self, mesaj):
+        """Basit sorulara hazır cevaplar (Ücretsiz mod)"""
+        mesaj_lower = mesaj.lower()
+        
+        if any(k in mesaj_lower for k in ['merhaba', 'selam', 'günaydın']):
+            return "👋 Merhaba! Tuba Butik'e hoş geldiniz. Size nasıl yardımcı olabilirim?"
+        
+        elif any(k in mesaj_lower for k in ['teşekkür', 'sağol', 'teşekkürler']):
+            return "🙏 Rica ederiz! Başka bir konuda yardımcı olabilir miyim?"
+        
+        elif any(k in mesaj_lower for k in ['görüşürüz', 'bye', 'hoşçakal']):
+            return "👋 Görüşmek üzere! İyi günler dileriz."
+        
+        elif 'fiyat' in mesaj_lower or 'ne kadar' in mesaj_lower:
+            return "💰 Fiyat bilgisi için ürün adı veya kodu paylaşabilir misiniz? Size özel fiyatlandırma sunalım."
+        
+        elif 'stok' in mesaj_lower:
+            return "📦 Stok durumunu kontrol etmek için ürün adı veya beden bilgisi verebilir misiniz?"
+        
+        else:
+            # Anlaşılmadıysa karmaşık moda yönlendir
+            return self.karmaşık_cevap(mesaj)
+
+    def karmaşık_cevap(self, mesaj, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None):
+        """Karmaşık sorulara Claude ile cevap (Ücretli mod)"""
+        
+        # API key kontrolü
+        api_key = self.claude_api_key
+        
+        # Eğer API key yoksa basit cevap ver
+        if not api_key or api_key == 'sk-ant-test':
+            logger.warning("Claude API key yok, basit cevap dönülüyor")
+            return "🤔 Bu konuda size yardımcı olmak için yetkilendirilmiş ekibimize yönlendiriyorum. En kısa sürede dönüş yapılacaktır."
+        
+        try:
+            # 1. Pinecone'dan alakalı ürünleri bul
+            urunler = self.pinecone.benzer_urunleri_bul(mesaj)
+            stokta_olanlar = [u for u in urunler if u['metadata']['stok'] > 0]
+            
+            # 2. Context oluştur
+            context = self._context_olustur(stokta_olanlar, gecmis_konusma, siparis_bilgisi)
+            
+            # 3. Claude'a gönder
+            logger.info(f"Claude API çağrısı yapılıyor... (key length: {len(api_key)})")
+            client = anthropic.Anthropic(api_key=api_key)
+            
+            response = client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1024,
+                temperature=0.7,
+                system=self.sistem_prompt,
+                messages=[
+                    {"role": "user", "content": f"CONTEXT:\n{context}\n\nMÜŞTERİ MESAJI:\n{mesaj}"}
+                ]
+            )
+            
+            logger.info("✅ Claude yanıtı başarıyla alındı")
+            return response.content[0].text
+            
+        except Exception as e:
+            logger.error(f"Claude hatası: {e}")
+            return "⚠️ Teknik bir sorun oluştu. Lütfen daha sonra tekrar deneyin veya yetkilimizle görüşün."
+    
+    def _context_olustur(self, urunler, gecmis, siparis):
+        """AI için context bilgisi oluştur"""
+        context = ""
+        
+        if gecmis:
+            context += f"Önceki Konuşma:\n{gecmis}\n\n"
+        
+        if siparis:
+            context += f"Müşteri Sipariş Bilgisi:\n{siparis}\n\n"
+        
+        if urunler:
+            context += "Mevcut Ürünler (Stokta Olanlar):\n"
+            for i, urun in enumerate(urunler[:3], 1):
+                meta = urun['metadata']
+                context += f"{i}. {meta['isim']} - {meta['fiyat']} TL (Stok: {meta['stok']})\n"
+        
+        return context

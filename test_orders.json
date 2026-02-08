@@ -1,0 +1,36 @@
+{
+  "test_orders": [
+    {
+      "orderId": "TEST001",
+      "orderPhone": "905367817705",
+      "customerName": "Test Müşteri",
+      "orderDate": "2025-01-15",
+      "products": [
+        {
+          "name": "Kırmızı Elbise",
+          "price": 299.99,
+          "size": "M",
+          "sku": "ELB001"
+        }
+      ],
+      "total": 299.99,
+      "status": "Teslim Edildi"
+    },
+    {
+      "orderId": "TEST002", 
+      "orderPhone": "905367817705",
+      "customerName": "Test Müşteri",
+      "orderDate": "2025-01-20",
+      "products": [
+        {
+          "name": "Siyah Pantolon",
+          "price": 199.99,
+          "size": "32",
+          "sku": "PN001"
+        }
+      ],
+      "total": 199.99,
+      "status": "Teslim Edildi"
+    }
+  ]
+}
