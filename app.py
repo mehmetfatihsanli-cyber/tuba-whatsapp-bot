@@ -5,7 +5,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from modules.butiksistem_client import ButikSistemClient
-from modules.ai_assistant import TubaAIAssistant
+from modules.ai_assistant import TubaAIAssistant, HANDOVER_MESAJI
 from modules.tuba_rules import TubaButikKurallari
 import requests
 
@@ -32,8 +32,8 @@ if SUPABASE_URL and SUPABASE_KEY:
 # 3. ButikSistem Baglantisi
 butik_client = ButikSistemClient()
 
-# 4. AI Asistan
-ai_assistant = TubaAIAssistant()
+# 4. AI Asistan (Butik client verilir; sipariş numaradan Butik'ten veya test verisinden bulunur)
+ai_assistant = TubaAIAssistant(butik_client=butik_client)
 
 # 5. Tuba Kurallari
 tuba_kurallar = TubaButikKurallari()
@@ -138,14 +138,18 @@ def webhook_receive():
         # 2. Bu müşterinin geçmiş konuşmasını al (son 20 mesaj)
         gecmis_konusma = get_gecmis_konusma(sender_phone) if supabase else None
 
-        # 3. AI'dan Akilli Cevap Al
-        cevap = ai_assistant.mesaj_olustur(
-            musteri_mesaji=msg_body,
-            musteri_telefon=sender_phone,
-            gecmis_konusma=gecmis_konusma
-        )
+        # 3. Kızgın müşteri mi? (açık küfür/yetkili talebi) → doğrudan yönlendir, AI çağırma
+        if ai_assistant.musteri_kizgin_mi(msg_body):
+            cevap = HANDOVER_MESAJI
+        else:
+            # 4. AI'dan akıllı cevap al
+            cevap = ai_assistant.mesaj_olustur(
+                musteri_mesaji=msg_body,
+                musteri_telefon=sender_phone,
+                gecmis_konusma=gecmis_konusma
+            )
 
-        # 4. Cevap Gonder
+        # 5. Cevap gönder
         if cevap:
             send_whatsapp_message(sender_phone, cevap)
             
@@ -218,6 +222,22 @@ def send_whatsapp_message(phone, text):
         logger.error(f"❌ Request hatasi: {e}")
         return False
 
+def notify_deploy_finished():
+    """Deploy bittiğinde admin numarasına WhatsApp ile bilgi mesajı atar."""
+    admin_phone = os.getenv("ADMIN_PHONE", "").strip()
+    if not admin_phone or not META_TOKEN or not PHONE_ID:
+        return
+    to = "".join(c for c in admin_phone if c.isdigit())
+    if not to:
+        return
+    try:
+        send_whatsapp_message(to, "✅ Deploy bitti. Tuba WhatsApp Bot çalışıyor.")
+        logger.info("Deploy bildirimi admin'e gonderildi.")
+    except Exception as e:
+        logger.warning(f"Deploy bildirimi atilamadi: {e}")
+
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
+    notify_deploy_finished()
     app.run(host='0.0.0.0', port=port)

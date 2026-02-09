@@ -2,10 +2,20 @@ import os
 import json
 import anthropic
 from modules.tuba_rules import TubaButikKurallari
+import config
 from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Kızgın müşteri: sadece bu durumlarda yönlendir (fazla tetikleme olmasın)
+YONLENDIRME_KELIMELERI = [
+    "yetkili", "müdür", "şikayet edeceğim", "tüketici hakları", "avukat", "savcılık",
+    "çok kızdım", "rezalet", "berbat", "işe yaramaz", "talanız", "kandırdınız",
+    "yetkiliniz", "patron", "savcı", "tüketici derneği"
+]
+HANDOVER_MESAJI = "Bu konuda size yardımcı olmak için yetkilimize yönlendiriyorum. En kısa sürede dönüş yapılacaktır."
+
 
 class TubaAIAssistant:
     """
@@ -13,10 +23,10 @@ class TubaAIAssistant:
     Ücretsiz ve Ücretli modları destekler
     """
     
-    def __init__(self):
-        # API key'i hemen okuma, lazy loading yap
+    def __init__(self, butik_client=None):
         self._claude_api_key = None
         self.pinecone = None
+        self.butik_client = butik_client
         try:
             from modules.pinecone_manager import PineconeManager
             self.pinecone = PineconeManager()
@@ -26,45 +36,25 @@ class TubaAIAssistant:
         
         # TEST MODU: Manuel sipariş verisi
         self.test_orders = self._load_test_orders()
-        
-        # Sistem promptu - Tuba Butik karakteri
-        self.sistem_prompt = """Sen Tuba Butik'in AI satış asistanısın. Adın Tuba.
-
-🎯 KARAKTERİN:
-- Samimi, sıcak ve profesyonel
-- Emoji kullan (👋 💝 📦 🚚 ✅)
-- "Siz" diye hitap et, saygılı ol
-- Net ve kısa cevaplar ver, gereksiz uzatma
-
-📋 İADE PROSEDÜRÜ:
-1. Müşteri "iade" derse: WhatsApp'tan iade formu linki ver
-2. Ürünler orijinal ambalajında ve etiketli olmalı
-3. Kargo ücreti müşteriye ait
-4. İade onayı sonrası 3-5 iş günü içinde para iadesi
-5. İade süresi: Sipariş tesliminden itibaren 14 gün
-
-🔄 DEĞİŞİM PROSEDÜRÜ:
-1. Maksimum 2 değişim hakkı var
-2. Beden/renk değişimi yapılır, para iadesi yok
-3. Stokta olmayan ürün için alternatif öner
-4. Değişim kargo ücreti müşteriye ait
-
-💡 ÜRÜN ÖNERİSİ:
-- Sadece stokta olan ürünleri öner
-- Fiyatı net söyle, kargo bedava ise belirt
-- Beden tablosu varsa paylaş
-
-⚠️ KURALLAR:
-- KVKK onayı olmayan müşteriyle ürün bilgisi verme
-- Karmaşık sorunlarda insan temsilciye yönlendir
-- Asla sağlık/beauty garantisi verme
-- Tedarik sorunlarını dürüstçe açıkla
-
-🆘 YÖNLENDİRME:
-- Şikayet/özel durum → "Size özel yardım için yetkilimize yönlendiriyorum"
-- Stokta olmayan ürün → Alternatif öner veya "Gelince haber verelim mi?"
-"""
+        # Sistem promptu: önce dosyadan oku, yoksa varsayılan
+        self.sistem_prompt = self._load_system_prompt()
     
+    def _load_system_prompt(self):
+        """Sistem promptunu prompts/tuba_system.txt dosyasından oku; yoksa varsayılan döndür."""
+        for path in ('prompts/tuba_system.txt', 'tuba_system.txt'):
+            try:
+                if os.path.isfile(path):
+                    with open(path, 'r', encoding='utf-8') as f:
+                        content = f.read().strip()
+                        if content:
+                            logger.info(f"✅ Sistem prompt yüklendi: {path}")
+                            return content
+            except Exception as e:
+                logger.warning(f"Prompt dosyası okunamadı ({path}): {e}")
+        # Varsayılan (dosya yoksa)
+        logger.warning("prompts/tuba_system.txt bulunamadı; varsayılan prompt kullanılıyor.")
+        return """Sen Tuba Butik'in satış asistanısın. Samimi ve profesyonel ol. İade 14 gün, değişim max 2. Gereksiz yere yetkiliye yönlendirme; sadece gerçekten kızgınlık/küfür/yetkili talebi varsa yönlendir."""
+
     def _load_test_orders(self):
         """Test siparişlerini yükle"""
         try:
@@ -74,9 +64,30 @@ class TubaAIAssistant:
         except Exception as e:
             logger.warning(f"Test siparişleri yüklenemedi: {e}")
             return []
+
+    def musteri_kizgin_mi(self, mesaj):
+        """
+        Müşteri mesajında açık kızgınlık/küfür/yetkili talebi var mı?
+        Sadece gerçekten net durumlarda True döner; fazla yönlendirme yapılmasın.
+        """
+        if not (mesaj and isinstance(mesaj, str)):
+            return False
+        t = self._turkce_arama_metni(mesaj)
+        # Küfür / sansürlü ifade
+        if "***" in mesaj or (len(mesaj) >= 3 and mesaj.count("*") >= 2):
+            return True
+        # Mesajın büyük kısmı büyük harf (bağırma)
+        harf_say = sum(1 for c in mesaj if c.isalpha())
+        buyuk_say = sum(1 for c in mesaj if c.isupper())
+        if harf_say >= 10 and buyuk_say >= harf_say * 0.7:
+            return True
+        # Açık kızgınlık / yetkili talebi kelimeleri
+        if any(k in t for k in YONLENDIRME_KELIMELERI):
+            return True
+        return False
     
     def get_orders_by_phone(self, phone):
-        """Telefon numarasına göre test siparişlerini bul"""
+        """Telefon numarasına göre test siparişlerini bul (test_orders.json)"""
         clean_phone = ''.join(filter(str.isdigit, str(phone)))
         matching = []
         for order in self.test_orders:
@@ -84,6 +95,42 @@ class TubaAIAssistant:
             if clean_phone in order_phone or order_phone in clean_phone:
                 matching.append(order)
         return matching
+
+    def _get_orders_by_phone(self, phone):
+        """Önce Butik Sistemden dene, yoksa test siparişlerinden al"""
+        if self.butik_client and getattr(self.butik_client, 'username', None):
+            try:
+                result = self.butik_client.check_order_by_phone(phone, days=90)
+                if result.get("found") and result.get("orders"):
+                    return result["orders"]
+            except Exception as e:
+                logger.warning(f"Butik sipariş sorgusu atlandi: {e}")
+        return self.get_orders_by_phone(phone)
+
+    def _turkce_arama_metni(self, mesaj):
+        """Türkçe İ/ı farkını kaldırıp arama için normalize metin (İade = iade)."""
+        s = (mesaj or "").lower()
+        s = s.replace("\u0131", "i")
+        s = s.replace("\u0069\u0307", "i")
+        s = s.replace("\u0130", "i")
+        return s
+
+    def _iade_degisim_ilk_cevap(self, mesaj, musteri_telefon):
+        """İade/değişim: sipariş kodu sor; numaradan sipariş varsa listele."""
+        t = self._turkce_arama_metni(mesaj)
+        if "iade" not in t and "değişim" not in t and "degisim" not in t:
+            return None
+        orders = []
+        if musteri_telefon:
+            orders = self._get_orders_by_phone(musteri_telefon)
+        if orders:
+            lines = []
+            for i, o in enumerate(orders[:5], 1):
+                urun = (o.get("products") or [{}])[0]
+                lines.append(f"• {o.get('orderId', '?')} – {urun.get('name', 'Ürün')} ({o.get('orderDate', '')})")
+            liste = "\n".join(lines)
+            return f"📦 Tabii. Sipariş kodunuzu biliyor musunuz? Numaranızdan baktım, siparişleriniz:\n{liste}\n\nHangisini değiştirmek/iade etmek istiyorsunuz?"
+        return "📦 Tabii. Sipariş kodunuzu öğrenebilir miyim? Bilmiyorsanız numaranızdan siparişlerinize bakabilirim."
     
     @property
     def claude_api_key(self):
@@ -97,18 +144,14 @@ class TubaAIAssistant:
         return self._claude_api_key
     
     def basit_mi_karmaşik_mi(self, mesaj):
-        basit_kelimeler = ['merhaba', 'selam', 'günaydın', 'iyi günler', 'fiyat', 'ne kadar', 'stokta var mı']
-        karmaşık_kelimeler = ['iade', 'değişim', 'şikayet', 'sorun', 'kusur', 'yardım', 'öneri', 'tavsiye', 'hangi', 'uygun', 'siparişim', 'kargo']
-        
-        mesaj_lower = mesaj.lower()
-        
-        if any(kelime in mesaj_lower for kelime in basit_kelimeler):
-            if not any(kelime in mesaj_lower for kelime in karmaşık_kelimeler):
+        basit_kelimeler = ['merhaba', 'merhava', 'merha', 'selam', 'günaydın', 'iyi günler', 'fiyat', 'ne kadar', 'stokta var mı']
+        karmaşık_kelimeler = ['iade', 'değişim', 'degisim', 'şikayet', 'sorun', 'kusur', 'yardım', 'öneri', 'tavsiye', 'hangi', 'uygun', 'siparişim', 'kargo']
+        t = self._turkce_arama_metni(mesaj)
+        if any(k in t for k in basit_kelimeler):
+            if not any(k in t for k in karmaşık_kelimeler):
                 return "basit"
-        
-        if any(kelime in mesaj_lower for kelime in karmaşık_kelimeler):
+        if any(k in t for k in karmaşık_kelimeler):
             return "karmaşık"
-        
         return "basit"
     
     def mesaj_olustur(self, musteri_mesaji, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None):
@@ -120,46 +163,47 @@ class TubaAIAssistant:
             return self.karmaşık_cevap(musteri_mesaji, musteri_telefon, gecmis_konusma, siparis_bilgisi)
     
     def basit_cevap(self, mesaj):
-        mesaj_lower = mesaj.lower()
+        t = self._turkce_arama_metni(mesaj)
+        # Karşılama: merhaba, merhava, merha, selam, günaydın vb.
+        if any(k in t for k in ['merhaba', 'merhava', 'merha', 'selam', 'günaydın', 'gunaydin', 'iyi gün', 'iyi gun']):
+            return "👋 Merhaba, Tuba Muttioğlu'na hoş geldiniz. Size nasıl yardımcı olabilirim?"
         
-        if any(k in mesaj_lower for k in ['merhaba', 'selam', 'günaydın']):
-            return "👋 Merhaba! Tuba Butik'e hoş geldiniz. Size nasıl yardımcı olabilirim?"
-        
-        elif any(k in mesaj_lower for k in ['teşekkür', 'sağol', 'teşekkürler']):
+        elif any(k in t for k in ['teşekkür', 'sağol', 'teşekkürler', 'tesekkur']):
             return "🙏 Rica ederiz! Başka bir konuda yardımcı olabilir miyim?"
         
-        elif any(k in mesaj_lower for k in ['görüşürüz', 'bye', 'hoşçakal']):
+        elif any(k in t for k in ['görüşürüz', 'bye', 'hoşçakal']):
             return "👋 Görüşmek üzere! İyi günler dileriz."
         
-        elif 'fiyat' in mesaj_lower or 'ne kadar' in mesaj_lower:
+        elif 'fiyat' in t or 'ne kadar' in t:
             return "💰 Fiyat bilgisi için ürün adı veya kodu paylaşabilir misiniz?"
         
-        elif 'stok' in mesaj_lower:
+        elif 'stok' in t:
             return "📦 Stok durumunu kontrol etmek için ürün bilgisi verebilir misiniz?"
         
         else:
             return self.karmaşık_cevap(mesaj)
 
     def karmaşık_cevap(self, mesaj, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None):
+        # İade/değişim: sipariş kodu sor, numaradan sipariş varsa listele (Butik veya test)
+        iade_cevap = self._iade_degisim_ilk_cevap(mesaj, musteri_telefon)
+        if iade_cevap:
+            return iade_cevap
+
         api_key = self.claude_api_key
-        
         if not api_key:
             return "🤔 Bu konuda size yardımcı olmak için yetkilimize yönlendiriyorum."
-        
-        # TEST: Telefon numarasına göre sipariş bul
+
         if musteri_telefon:
-            orders = self.get_orders_by_phone(musteri_telefon)
+            orders = self._get_orders_by_phone(musteri_telefon)
             if orders:
                 siparis_bilgisi = self._format_orders(orders)
-        
+
         try:
-            client = anthropic.Anthropic(api_key=api_key)
-            
+            client = anthropic.Anthropic(api_key=api_key, timeout=25.0)
             context = self._context_olustur(gecmis_konusma, siparis_bilgisi)
-            
-            # DÜZELTİLMİŞ MODEL ADI
+            model = getattr(config, "AI_MODEL", None) or os.getenv("AI_MODEL", "claude-3-5-sonnet-20241022")
             response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model=model,
                 max_tokens=1024,
                 temperature=0.7,
                 system=self.sistem_prompt,
@@ -167,18 +211,10 @@ class TubaAIAssistant:
                     {"role": "user", "content": f"CONTEXT:\n{context}\n\nMÜŞTERİ MESAJI:\n{mesaj}"}
                 ]
             )
-            
             return response.content[0].text
-            
         except Exception as e:
             logger.exception(f"Claude hatası: {e}")
-            # Claude hata verirse bile iade/değişim için kısa cevap ver
-            mesaj_lower = (mesaj or "").lower()
-            if "iade" in mesaj_lower and "değişim" not in mesaj_lower:
-                return "📦 İade için: Ürünler orijinal ambalajında ve etiketli olmalı. Sipariş tesliminden itibaren 14 gün içinde iade yapabilirsiniz. Kargo ücreti müşteriye aittir. Detaylı form için WhatsApp üzerinden ileteceğimiz linki kullanabilirsiniz. Başka sorunuz var mı?"
-            if "değişim" in mesaj_lower:
-                return "🔄 Değişim için: En fazla 2 değişim hakkınız var; beden/renk değişimi yapılır. Stokta olmayan ürün için alternatif önerebiliriz. Değişim kargo ücreti müşteriye aittir. Sipariş bilginizle birlikte yazarsanız yardımcı oluruz."
-            return "⚠️ Teknik bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+            return "🤔 Bu konuda size yardımcı olmak için yetkilimize yönlendiriyorum. En kısa sürede dönüş yapılacaktır."
     
     def _format_orders(self, orders):
         """Siparişleri formatla"""
