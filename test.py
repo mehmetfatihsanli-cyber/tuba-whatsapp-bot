@@ -1,6 +1,9 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import anthropic
 
-client = anthropic.Anthropic(api_key="REDACTED")
+client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 message = client.messages.create(
     model="claude-sonnet-4-20250514",

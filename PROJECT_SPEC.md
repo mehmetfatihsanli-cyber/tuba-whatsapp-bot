@@ -88,7 +88,7 @@ Thank you! 🙏
 **Video message:** Same pattern
 
 ### 6. CLAUDE AI INTEGRATION
-**API Key:** REDACTED
+**API Key:** (use env `ANTHROPIC_API_KEY` – do not commit real key)
 
 **Text messages:**
 ```python
@@ -149,7 +149,7 @@ Body: {
 ```
 SUPABASE_URL=https://nvqyqhhcsmrjkqcqfeaf.supabase.co
 SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52cXlxaGhjc21yamtxY3FmZWFmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNzc2NjgwMCwiZXhwIjoyMDUzMzQyODAwfQ.CYcIk8MwDLWD9DgK9vJd9Q_sc92jdvw
-CLAUDE_API_KEY=REDACTED
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
 META_ACCESS_TOKEN=EAAbngqb3Gx8BQhHgMeUg6EASBhyytWnVDn0hYkq9X7OHZBGEeNPVIFRu3TI5eg9wkJSZBfF85UDfCe2DdUcQpMPjZBJ7PDEFVknh1UggalkZBjVwPAZCEj3ZAlrYlBoVOd7TkWWJR0QTrXSMQ5FarOCHglpFH8hjr8ZA2PiCNoMs5SgCzSriryP0rlZCvG3ciEYWUfS5Mxol4dFdyhFEv9IHHn0grwIUveir44gWaCLoCYNaTZBmDdMrnOleZABSGhIUVacZBj1GIJ1ZCaMVefcTbLdJtviwqCZBYOzAZD
 META_VERIFY_TOKEN=12345
 PORT=5000
