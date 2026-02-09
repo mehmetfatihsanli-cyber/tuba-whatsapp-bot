@@ -5,7 +5,7 @@ load_dotenv()
 
 # Anthropic Claude API
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', 'sk-ant-test')
-AI_MODEL = os.getenv('AI_MODEL', 'claude-3-5-sonnet-20241022')
+AI_MODEL = os.getenv('AI_MODEL', 'claude-3-5-sonnet-latest')
 
 # Supabase - GEÇERLİ FORMAT (geçici)
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://test.supabase.co')

@@ -156,11 +156,10 @@ class TubaAIAssistant:
     
     def mesaj_olustur(self, musteri_mesaji, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None):
         tur = self.basit_mi_karmaşik_mi(musteri_mesaji)
-        
+        logger.info(f"[AI] mesaj türü={tur} | metin={musteri_mesaji[:60]}...")
         if tur == "basit":
             return self.basit_cevap(musteri_mesaji)
-        else:
-            return self.karmaşık_cevap(musteri_mesaji, musteri_telefon, gecmis_konusma, siparis_bilgisi)
+        return self.karmaşık_cevap(musteri_mesaji, musteri_telefon, gecmis_konusma, siparis_bilgisi)
     
     def basit_cevap(self, mesaj):
         t = self._turkce_arama_metni(mesaj)
@@ -187,10 +186,12 @@ class TubaAIAssistant:
         # İade/değişim: sipariş kodu sor, numaradan sipariş varsa listele (Butik veya test)
         iade_cevap = self._iade_degisim_ilk_cevap(mesaj, musteri_telefon)
         if iade_cevap:
+            logger.info("[AI] İade/değişim sabit cevap (model yok)")
             return iade_cevap
 
         api_key = self.claude_api_key
         if not api_key:
+            logger.warning("[AI] ANTHROPIC_API_KEY yok, yönlendirme dönüyor")
             return "🤔 Bu konuda size yardımcı olmak için yetkilimize yönlendiriyorum."
 
         if musteri_telefon:
@@ -199,9 +200,10 @@ class TubaAIAssistant:
                 siparis_bilgisi = self._format_orders(orders)
 
         try:
+            logger.info("[AI] Claude çağrılıyor...")
             client = anthropic.Anthropic(api_key=api_key, timeout=25.0)
             context = self._context_olustur(gecmis_konusma, siparis_bilgisi)
-            model = getattr(config, "AI_MODEL", None) or os.getenv("AI_MODEL", "claude-3-5-sonnet-20241022")
+            model = getattr(config, "AI_MODEL", None) or os.getenv("AI_MODEL", "claude-3-5-sonnet-latest")
             response = client.messages.create(
                 model=model,
                 max_tokens=1024,
