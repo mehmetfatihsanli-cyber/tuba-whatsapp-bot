@@ -1,0 +1,27 @@
+{% extends "legal/base_legal.html" %}
+{% block title %}Kullanım Koşulları{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Kullanım Koşulları</h1>
+<p class="text-slate-600 mb-4">Bu koşullar, <strong>{{ company.legal_name or "ŞİRKET_ADI" }}</strong> (“Şirket”) tarafından sunulan AI Satış SaaS yazılım hizmetinin kullanımına ilişkindir. Hizmete kayıt veya kullanımla birlikte bu koşulları kabul etmiş sayılırsınız.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">1. Hizmetin Tanımı</h2>
+<p class="mb-4">Hizmet, WhatsApp ve benzeri kanallar üzerinden yapay zeka destekli müşteri iletişimi ve satış yönetimi sunan bulut tabanlı yazılımdır. Özellikler ve kapsam, seçilen abonelik planına göre değişir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">2. Kayıt ve Hesap</h2>
+<p class="mb-4">Kullanıcı, verdiği bilgilerin doğru ve güncel olmasından sorumludur. Hesap güvenliği kullanıcıya aittir. Şirket, yetkisiz kullanımdan kaynaklanan zararlardan sorumlu tutulamaz.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">3. Kullanım Kuralları</h2>
+<p class="mb-4">Hizmet yalnızca yasal ve meşru amaçlarla kullanılır. Spam, dolandırıcılık, üçüncü kişilerin haklarına tecavüz veya altyapıya zarar verecek kullanım yasaktır. İhlal halinde hesap askıya alınabilir veya feshedilebilir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">4. Fikri Mülkiyet</h2>
+<p class="mb-4">Yazılım, arayüz ve markalar Şirket veya lisans verenlere aittir. Kullanıcıya yalnızca kullanım hakkı tanınır; kopyalama, dağıtma veya tersine mühendislik yasaktır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">5. Ödeme ve Fesih</h2>
+<p class="mb-4">Abonelik ücretleri seçilen plana göre dönemsel (aylık/yıllık) tahsil edilir. İptal ve iade koşulları “İptal ve İade Koşulları” sayfasında yer alır. Şirket, ciddi ihlallerde hizmeti önceden bildirimle sonlandırabilir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">6. Sorumluluk Sınırı</h2>
+<p class="mb-4">Hizmet “olduğu gibi” sunulur. Şirket, dolaylı zarar, veri kaybı veya kâr kaybından sorumlu tutulamaz; yasal zorunluluklar saklıdır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">7. İletişim</h2>
+<p class="mb-4">Sorularınız için: {{ company.email or "ŞİRKET_EMAIL" }}, {{ company.phone or "TELEFON" }}.</p>
+{% endblock %}

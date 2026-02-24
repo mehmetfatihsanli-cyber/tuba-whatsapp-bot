@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}Virtual Try-On – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">Virtual Try-On</h1>
+    <p class="text-slate-600 text-sm mb-6">
+        Askıdaki kıyafeti yükleyin, kategori seçin. AI kıyafeti seçtiğiniz manken üzerinde gösterir. Sonucu indirip web sitenize ekleyebilirsiniz. İşlem yaklaşık 30–40 saniye sürebilir.
+    </p>
+
+    <div class="rounded-xl border border-blue-200 bg-blue-50/80 p-5 mb-6 text-sm text-slate-700">
+        <p class="font-semibold text-slate-800 mb-4">📸 Profesyonel Sonuç İçin Çekim Standartları</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rounded-lg border border-blue-100 bg-white/80 p-3">
+                <p class="font-medium text-slate-800 mb-1">☀️ Doğru Işıklandırma</p>
+                <p class="text-slate-600 text-xs leading-relaxed">Ürünün rengini ve dokusunu net gösteren, gölgesiz ve aydınlık bir ortam tercih ediniz.</p>
+            </div>
+            <div class="rounded-lg border border-blue-100 bg-white/80 p-3">
+                <p class="font-medium text-slate-800 mb-1">🧥 Net Ürün Formu</p>
+                <p class="text-slate-600 text-xs leading-relaxed">Ürünü düz renk (tercihen beyaz) bir duvar önünde askıda VEYA pürüzsüz bir zeminde formunu koruyarak çekiniz.</p>
+            </div>
+            <div class="rounded-lg border border-blue-100 bg-white/80 p-3">
+                <p class="font-medium text-slate-800 mb-1">⬜ Sade Arka Plan</p>
+                <p class="text-slate-600 text-xs leading-relaxed">Yapay zekanın odaklanabilmesi için arka planda başka eşyalar veya desenler olmamalıdır.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="tryon-not-configured" class="hidden rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 mb-6 text-sm">
+        Virtual Try-On şu an kullanıma hazır değil. Aktifleştirmek için lütfen yöneticinizle iletişime geçin.
+    </div>
+    <!-- Varsayılan manken: panelden yükle, 3:4 otomatik kırpılır; müşteriden URL istemeye gerek yok -->
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 mb-6">
+        <h3 class="text-sm font-semibold text-slate-800 mb-2">Varsayılan manken görseli</h3>
+        <p class="text-slate-500 text-xs mb-3">Kıyafeti göstermek için bir “model” fotoğrafı gerekir. Buradan yükleyebilir veya aşağıda her deneme için isteğe bağlı manken URL’si girebilirsiniz.</p>
+        <div id="mannequinStatus" class="hidden mb-2 flex items-center gap-2 flex-wrap">
+            <span class="text-sm text-emerald-600 font-medium">Manken görseli ayarlandı.</span>
+            <button type="button" id="mannequinRemoveBtn" class="text-sm font-medium text-red-600 hover:text-red-700 underline">Kaldır</button>
+        </div>
+        <div id="mannequinUpload" class="flex items-center gap-2 flex-wrap">
+            <input type="file" id="mannequinFile" accept="image/*" class="hidden" />
+            <button type="button" id="mannequinSelectBtn" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200">Görsel seç</button>
+            <span id="mannequinFileName" class="text-slate-500 text-sm"></span>
+            <button type="button" id="mannequinUploadBtn" class="hidden px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Yükle</button>
+        </div>
+        <p id="mannequinUploadStatus" class="mt-2 text-xs text-slate-500" aria-live="polite"></p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Sol: Yükleme + Kategori -->
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-3">Kıyafet görseli</h2>
+            <p class="text-slate-500 text-xs mb-2">Farklı açılardan 1–3 görsel seçebilirsiniz; işlem için ilk seçilen görsel kullanılır.</p>
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer">
+                <input type="file" id="garmentFile" accept="image/*" multiple class="hidden" />
+                <p id="dropZoneText" class="text-slate-500 text-sm mb-1">Dosyayı buraya sürükleyin veya tıklayıp seçin</p>
+                <div id="garmentChosen" class="hidden mt-2 flex flex-col items-center justify-center gap-1 flex-wrap">
+                    <p id="garmentFileSummary" class="text-emerald-600 text-sm font-medium"></p>
+                    <button type="button" id="garmentRemoveBtn" class="text-red-600 hover:text-red-700 text-sm font-medium underline">Kaldır</button>
+                </div>
+            </div>
+            <div class="mt-4">
+                <label for="garmentDescription" class="block text-sm font-medium text-slate-700 mb-2">Bu resim nasıl olsun? (İsteğe bağlı)</label>
+                <textarea id="garmentDescription" name="garment_description" rows="2" placeholder="Örn: Sade, siyah kadife; veya kıyafetin rengi/stili hakkında kısa açıklama" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 placeholder-slate-400 text-sm resize-y"></textarea>
+                <p class="mt-1 text-xs text-slate-500">Bu metin, AI’a kıyafet açıklaması olarak gönderilir; kategori ile birlikte sonucu etkiler.</p>
+            </div>
+            <div class="mt-4">
+                <label for="mannequinUrl" class="block text-sm font-medium text-slate-700 mb-2">Manken URL'si (isteğe bağlı)</label>
+                <input type="url" id="mannequinUrl" name="mannequin_url" placeholder="Bu deneme için farklı manken: görsel linki yapıştırın. Boş bırakırsanız varsayılan kullanılır." class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 placeholder-slate-400 text-sm" />
+            </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Kategori</label>
+                <select id="category" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 bg-white">
+                    <option value="bluz">Bluz / Gömlek / Ceket</option>
+                    <option value="pantolon">Pantolon</option>
+                    <option value="etek">Etek</option>
+                    <option value="elbise">Elbise</option>
+                    <option value="ust">Üst (genel)</option>
+                    <option value="alt">Alt (genel)</option>
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Kıyafet tipine uygun kategoriyi seçin; sonuç buna göre oluşturulur.</p>
+            </div>
+            <div class="mt-6">
+                <button type="button" id="tryonBtn" class="w-full px-5 py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <span id="tryonBtnText">Mankene Giydir 👗</span>
+                    <span id="tryonSpinner" class="hidden">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                </button>
+                <p id="tryonStatus" class="mt-2 text-sm text-slate-500 text-center" aria-live="polite"></p>
+            </div>
+        </div>
+
+        <!-- Sağ: Sonuç + büyük önizleme -->
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 flex flex-col">
+            <h2 class="text-lg font-semibold text-slate-800 mb-3">Sonuç</h2>
+            <div id="resultPlaceholder" class="border-2 border-dashed border-slate-200 rounded-xl p-12 text-center text-slate-400 text-sm min-h-[320px] flex items-center justify-center">
+                Sonuç burada görünecek. “Mankene Giydir”e tıklayın.
+            </div>
+            <div id="resultArea" class="hidden flex flex-col flex-1">
+                <p class="text-sm font-medium text-slate-600 mb-2">Önizleme <span class="text-slate-400 font-normal">(büyütmek için resme tıklayın)</span></p>
+                <div class="rounded-xl border-2 border-slate-200 bg-slate-100/50 overflow-hidden flex-1 min-h-[380px] flex items-center justify-center p-2">
+                    <img id="resultImage" src="" alt="Virtual Try-On sonucu" class="max-w-full w-full h-auto max-h-[70vh] object-contain rounded-lg shadow-md cursor-pointer hover:opacity-95 transition" title="Büyütmek için tıklayın" />
+                </div>
+                <a id="downloadBtn" href="#" download="virtual-tryon-sonuc.jpg" class="mt-4 inline-flex items-center justify-center w-full px-4 py-3 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-700 transition shrink-0">
+                    İndir
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox: resme tıklanınca tam ekran önizleme (indir gibi görüntüleme) -->
+    <div id="resultLightbox" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="Sonuç görseli büyük önizleme">
+        <button type="button" id="lightboxClose" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 text-slate-800 flex items-center justify-center hover:bg-white shadow-lg text-xl leading-none" aria-label="Kapat">&times;</button>
+        <img id="lightboxImage" src="" alt="Virtual Try-On sonucu – tam görünüm" class="max-w-[95vw] max-h-[95vh] w-auto h-auto object-contain rounded" />
+    </div>
+</div>
+
+<script>
+(function() {
+    const dropZone = document.getElementById('dropZone');
+    const garmentFile = document.getElementById('garmentFile');
+    const dropZoneText = document.getElementById('dropZoneText');
+    const garmentChosen = document.getElementById('garmentChosen');
+    const garmentFileSummary = document.getElementById('garmentFileSummary');
+    const garmentRemoveBtn = document.getElementById('garmentRemoveBtn');
+    const garmentDescription = document.getElementById('garmentDescription');
+    const category = document.getElementById('category');
+    const tryonBtn = document.getElementById('tryonBtn');
+    const tryonBtnText = document.getElementById('tryonBtnText');
+    const tryonSpinner = document.getElementById('tryonSpinner');
+    const tryonStatus = document.getElementById('tryonStatus');
+    const resultPlaceholder = document.getElementById('resultPlaceholder');
+    const resultArea = document.getElementById('resultArea');
+    const resultImage = document.getElementById('resultImage');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const notConfiguredEl = document.getElementById('tryon-not-configured');
+    const resultLightbox = document.getElementById('resultLightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxClose = document.getElementById('lightboxClose');
+
+    function setStatus(msg, isError) {
+        tryonStatus.textContent = msg;
+        tryonStatus.className = 'mt-2 text-sm text-center ' + (isError ? 'text-red-600' : 'text-slate-500');
+    }
+
+    dropZone.addEventListener('click', function(e) {
+        if (e.target.closest('#garmentChosen')) return;
+        garmentFile.click();
+    });
+    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('border-emerald-400', 'bg-emerald-50/50'); });
+    dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('border-emerald-400', 'bg-emerald-50/50'); });
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-emerald-400', 'bg-emerald-50/50');
+        if (e.dataTransfer.files.length) {
+            garmentFile.files = e.dataTransfer.files;
+            updateFileSummary(e.dataTransfer.files);
+        }
+    });
+
+    garmentFile.addEventListener('change', function() {
+        if (this.files && this.files.length) updateFileSummary(this.files);
+        else clearGarment();
+    });
+
+    garmentRemoveBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearGarment();
+    });
+
+    function updateFileSummary(files) {
+        var n = files.length;
+        if (n === 1) {
+            garmentFileSummary.textContent = files[0].name;
+        } else {
+            garmentFileSummary.textContent = n + ' görsel seçildi; işlem için ilk görsel kullanılacak.';
+        }
+        garmentChosen.classList.remove('hidden');
+    }
+
+    function clearGarment() {
+        garmentFile.value = '';
+        garmentFileSummary.textContent = '';
+        garmentChosen.classList.add('hidden');
+    }
+
+    tryonBtn.addEventListener('click', function() {
+        if (!garmentFile.files || !garmentFile.files[0]) {
+            setStatus('Önce bir kıyafet görseli seçin.', true);
+            return;
+        }
+        tryonBtn.disabled = true;
+        tryonBtnText.classList.add('hidden');
+        tryonSpinner.classList.remove('hidden');
+        setStatus('İşleniyor… Yaklaşık 30–40 saniye sürebilir.');
+        resultArea.classList.add('hidden');
+        resultPlaceholder.classList.remove('hidden');
+
+        const form = new FormData();
+        form.append('garment', garmentFile.files[0]); // Çoklu seçilse bile API için ilk görsel
+        form.append('category', category.value);
+        if (garmentDescription.value && garmentDescription.value.trim())
+            form.append('description', garmentDescription.value.trim());
+        var mannequinUrlEl = document.getElementById('mannequinUrl');
+        if (mannequinUrlEl && mannequinUrlEl.value && mannequinUrlEl.value.trim())
+            form.append('mannequin_url', mannequinUrlEl.value.trim());
+
+        fetch('/api/generate-tryon', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: form
+        })
+        .then(function(r) { return r.json().then(function(j) { return { status: r.status, json: j }; }); })
+        .then(function(res) {
+            if (res.json.success && res.json.output_url) {
+                var outUrl = res.json.output_url;
+                resultImage.onerror = function() { this.onerror = null; this.src = outUrl; };
+                resultImage.src = '/api/tryon-image-proxy?url=' + encodeURIComponent(outUrl);
+                downloadBtn.href = '/api/tryon-download?url=' + encodeURIComponent(outUrl);
+                downloadBtn.download = 'virtual-tryon-sonuc.jpg';
+                resultPlaceholder.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+                setStatus('Hazır. İndir ile kaydedebilirsiniz.');
+            } else {
+                setStatus(res.json.error || 'İşlem başarısız.', true);
+            }
+        })
+        .catch(function() {
+            setStatus('Bağlantı hatası.', true);
+        })
+        .finally(function() {
+            tryonBtn.disabled = false;
+            tryonBtnText.classList.remove('hidden');
+            tryonSpinner.classList.add('hidden');
+        });
+    });
+
+    // Sonuç resmine tıklanınca lightbox: ekranda büyük, ortada (indir gibi görüntüleme)
+    resultImage.addEventListener('click', function() {
+        if (!resultImage.src) return;
+        lightboxImage.src = resultImage.src;
+        resultLightbox.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+    function closeLightbox() {
+        resultLightbox.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    lightboxClose.addEventListener('click', closeLightbox);
+    resultLightbox.addEventListener('click', function(e) {
+        if (e.target === resultLightbox) closeLightbox();
+    });
+    lightboxImage.addEventListener('click', function(e) { e.stopPropagation(); });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !resultLightbox.classList.contains('hidden')) closeLightbox();
+    });
+
+    fetch('/api/tryon-status', { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.configured) notConfiguredEl.classList.remove('hidden');
+        })
+        .catch(function() { notConfiguredEl.classList.remove('hidden'); });
+
+    // Varsayılan manken: durum yükle, yükleme butonu
+    var mannequinStatus = document.getElementById('mannequinStatus');
+    var mannequinUpload = document.getElementById('mannequinUpload');
+    var mannequinFile = document.getElementById('mannequinFile');
+    var mannequinSelectBtn = document.getElementById('mannequinSelectBtn');
+    var mannequinFileName = document.getElementById('mannequinFileName');
+    var mannequinUploadBtn = document.getElementById('mannequinUploadBtn');
+    var mannequinUploadStatus = document.getElementById('mannequinUploadStatus');
+
+    function loadMannequinStatus() {
+        fetch('/api/ai-studio/default-mannequin', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.set) {
+                    mannequinStatus.classList.remove('hidden');
+                    var span = mannequinStatus.querySelector('span');
+                    if (span) span.textContent = 'Manken görseli ayarlandı. Değiştirmek için yeni görsel yükleyin.';
+                } else {
+                    mannequinStatus.classList.add('hidden');
+                }
+            })
+            .catch(function() { mannequinStatus.classList.add('hidden'); });
+    }
+    loadMannequinStatus();
+
+    document.getElementById('mannequinRemoveBtn').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        fetch('/api/ai-studio/default-mannequin/remove', { method: 'POST', credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    mannequinStatus.classList.add('hidden');
+                    mannequinUploadStatus.textContent = data.message || 'Manken kaldırıldı.';
+                } else {
+                    mannequinUploadStatus.textContent = data.error || 'Kaldırılamadı.';
+                }
+            })
+            .catch(function() { mannequinUploadStatus.textContent = 'Bağlantı hatası.'; })
+            .finally(function() { btn.disabled = false; });
+    });
+
+    mannequinSelectBtn.addEventListener('click', function() { mannequinFile.click(); });
+    mannequinFile.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            mannequinFileName.textContent = this.files[0].name;
+            mannequinUploadBtn.classList.remove('hidden');
+        } else {
+            mannequinFileName.textContent = '';
+            mannequinUploadBtn.classList.add('hidden');
+        }
+    });
+    mannequinUploadBtn.addEventListener('click', function() {
+        if (!mannequinFile.files || !mannequinFile.files[0]) return;
+        mannequinUploadBtn.disabled = true;
+        mannequinUploadStatus.textContent = 'Yükleniyor ve 3:4 oranına getiriliyor…';
+        var form = new FormData();
+        form.append('image', mannequinFile.files[0]);
+        fetch('/api/ai-studio/default-mannequin', { method: 'POST', credentials: 'same-origin', body: form })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    mannequinUploadStatus.textContent = data.message || 'Kaydedildi.';
+                    mannequinFile.value = '';
+                    mannequinFileName.textContent = '';
+                    mannequinUploadBtn.classList.add('hidden');
+                    loadMannequinStatus();
+                } else {
+                    mannequinUploadStatus.textContent = data.error || 'Yükleme başarısız.';
+                }
+            })
+            .catch(function() { mannequinUploadStatus.textContent = 'Bağlantı hatası.'; })
+            .finally(function() { mannequinUploadBtn.disabled = false; });
+    });
+})();
+</script>
+{% endblock %}

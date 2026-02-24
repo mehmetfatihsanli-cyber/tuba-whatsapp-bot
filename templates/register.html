@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kayıt Ol – AI Satış</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; min-height: 100vh; background: #f0f2f5; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); max-width: 400px; width: 100%; }
+        .card h1 { margin: 0 0 8px; font-size: 1.35rem; color: #333; }
+        .card p { color: #666; font-size: 0.9rem; margin-bottom: 24px; }
+        label { display: block; font-weight: 500; color: #333; margin-bottom: 6px; font-size: 0.9rem; }
+        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; margin-bottom: 16px; }
+        button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; }
+        button:hover { background: #1d4ed8; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 16px; display: none; }
+        .card a { color: #2563eb; font-size: 0.9rem; text-decoration: none; }
+        .card a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Kayıt Ol</h1>
+        <p>Hesap oluşturun ve panele hemen giriş yapın.</p>
+        <div class="error" id="error">{% if error %}{{ error }}{% endif %}</div>
+        <form method="post" action="/register" id="form">
+            <label for="full_name">Ad Soyad</label>
+            <input type="text" name="full_name" id="full_name" placeholder="Adınız Soyadınız" required autocomplete="name" />
+            <label for="email">E-posta</label>
+            <input type="email" name="email" id="email" placeholder="ornek@firma.com" required autocomplete="email" />
+            <label for="password">Şifre</label>
+            <input type="password" name="password" id="password" placeholder="En az 6 karakter" required minlength="6" autocomplete="new-password" />
+            <label for="store_name">Mağaza Adı</label>
+            <input type="text" name="store_name" id="store_name" placeholder="Mağazanızın veya işletmenizin adı" required autocomplete="organization" />
+            <button type="submit">Kayıt Ol</button>
+        </form>
+        <p style="margin-top:20px;text-align:center;">Zaten hesabınız var mı? <a href="/login">Giriş Yap</a></p>
+        <p style="margin-top:8px;text-align:center;"><a href="/">← Ana sayfaya dön</a></p>
+    </div>
+    <script>
+        var form = document.getElementById('form');
+        if (form) form.onsubmit = function() {
+            var err = document.getElementById('error');
+            if (err) err.style.display = 'none';
+        };
+        var err = document.getElementById('error');
+        if (err && err.textContent.trim()) err.style.display = 'block';
+    </script>
+</body>
+</html>

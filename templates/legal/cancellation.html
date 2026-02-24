@@ -1,0 +1,18 @@
+{% extends "legal/base_legal.html" %}
+{% block title %}İptal ve İade Koşulları{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">İptal ve İade Koşulları</h1>
+<p class="text-slate-600 mb-4">{{ company.legal_name or "ŞİRKET_ADI" }} tarafından sunulan AI Satış SaaS abonelik hizmetine ilişkin iptal ve iade kuralları aşağıdadır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">1. Cayma Hakkı ve Vazgeçiş</h2>
+<p class="mb-4">Mesafeli sözleşmelerde tüketici, 14 gün içinde herhangi bir gerekçe göstermeksizin cayma hakkına sahiptir. Ancak 6502 sayılı Kanun ve Mesafeli Sözleşmeler Yönetmeliği uyarınca, elektronik ortamda anında ifa edilen hizmetlerde (abonelik erişiminin anında açılması) tüketici, hizmeti kullanmaya başlamadan önce açık rızasıyla cayma hakkından vazgeçebilir. Ödeme/onay ekranında “Cayma hakkımdan vazgeçiyorum” onayı verilerek bu vazgeçiş yapılmaktadır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">2. Abonelik İptali</h2>
+<p class="mb-4">Kullanıcı, dönem sonuna kadar aboneliği panel üzerinden veya {{ company.email or "ŞİRKET_EMAIL" }} üzerinden iptal edebilir. İptal sonrası mevcut dönem sonuna kadar hizmet kullanımı devam eder; sonraki dönem ücreti tahsil edilmez. Otomatik yenilenen aboneliklerde, yenileme tarihinden en az 7 gün önce iptal bildirimi yapılmalıdır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">3. İade Koşulları</h2>
+<p class="mb-4">Cayma hakkı kullanılmadığı (açık rıza ile vazgeçildiği) ve hizmetin ifasına başlandığı durumlarda, yasal zorunluluk dışında kısmi veya tam iade yapılmaz. Yasal cayma hakkı kullanıldığında (hizmet kullanılmadan, 14 gün içinde başvuru), ödenen bedel 14 gün içinde iade edilir. İade, ödemenin yapıldığı kart/hesaba veya aynı yöntemle gerçekleştirilir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">4. Başvuru</h2>
+<p class="mb-4">İptal ve iade talepleri {{ company.email or "ŞİRKET_EMAIL" }} veya {{ company.phone or "TELEFON" }} üzerinden iletilir. Talepler en geç 14 iş günü içinde yanıtlanır.</p>
+{% endblock %}

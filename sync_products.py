@@ -30,16 +30,22 @@ class XMLProductSync:
             root = ET.fromstring(xml_content)
             urunler = []
             
-            # XML yapısına göre ürünleri bul
+            # XML yapısına göre ürünleri bul (link: Facebook feed'de product url; yoksa TUBA_URUN_URL_TEMPLATE ile üretilir)
+            base_url = os.getenv("TUBA_URUN_URL_TEMPLATE", "https://www.tubamutioglu.com/urun/{id}").strip()
             for item in root.findall('.//item'):
+                uid = item.findtext('id', '')
+                link = item.findtext('link', '') or item.findtext('url', '') or item.findtext('product_link', '')
+                if not link and uid and '{id}' in base_url:
+                    link = base_url.replace('{id}', uid)
                 urun = {
-                    'id': item.findtext('id', ''),
+                    'id': uid,
                     'isim': item.findtext('title', ''),
                     'aciklama': item.findtext('description', ''),
                     'fiyat': item.findtext('price', '0'),
                     'stok': item.findtext('quantity', '0'),
                     'gorsel': item.findtext('image_link', ''),
-                    'varyantlar': item.findtext('size', '') + ' ' + item.findtext('color', '')
+                    'varyantlar': item.findtext('size', '') + ' ' + item.findtext('color', ''),
+                    'product_url': link.strip() if link else ''
                 }
                 urunler.append(urun)
             
@@ -64,7 +70,8 @@ class XMLProductSync:
                     fiyat=float(urun['fiyat']),
                     stok=int(urun['stok']),
                     gorsel=urun['gorsel'],
-                    varyantlar=urun['varyantlar']
+                    varyantlar=urun['varyantlar'],
+                    product_url=urun.get('product_url') or None
                 )
                 basari += 1
             except Exception as e:

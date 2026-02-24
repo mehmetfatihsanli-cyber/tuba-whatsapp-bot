@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Entegrasyonlar – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">Entegrasyonlar</h1>
+    <p class="text-slate-600 text-sm mb-8">Pazaryeri ve dış sistem bağlantılarınızı buradan yönetin.</p>
+
+    <!-- Trendyol kartı - turuncu detaylı -->
+    <div class="rounded-2xl border-2 border-orange-400 bg-white shadow-lg overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-lg">T</div>
+            <div>
+                <h2 class="text-lg font-bold text-white">Trendyol</h2>
+                <p class="text-orange-100 text-sm">Satıcı API bilgilerinizi girin; sipariş ve ürün senkronizasyonu için kullanılacaktır.</p>
+            </div>
+        </div>
+        <form id="trendyolForm" class="p-6 space-y-4">
+            <div>
+                <label for="trendyol_seller_id" class="block text-sm font-medium text-slate-700 mb-1">Satıcı ID</label>
+                <input type="text" id="trendyol_seller_id" name="trendyol_seller_id" placeholder="Örn: 123456" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm" autocomplete="off" />
+            </div>
+            <div>
+                <label for="trendyol_api_key" class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
+                <input type="password" id="trendyol_api_key" name="trendyol_api_key" placeholder="API anahtarınız" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm" autocomplete="off" />
+            </div>
+            <div>
+                <label for="trendyol_api_secret" class="block text-sm font-medium text-slate-700 mb-1">API Secret</label>
+                <input type="password" id="trendyol_api_secret" name="trendyol_api_secret" placeholder="API gizli anahtarınız" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm" autocomplete="off" />
+            </div>
+            <div id="formMessageTrendyol" class="hidden text-sm rounded-xl p-3"></div>
+            <button type="submit" id="btnSaveTrendyol" class="w-full inline-flex items-center justify-center px-4 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition disabled:opacity-50">
+                Kaydet
+            </button>
+        </form>
+    </div>
+
+    <!-- Hepsiburada kartı - turuncu/beyaz -->
+    <div class="rounded-2xl border-2 border-orange-300 bg-white shadow-lg overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-orange-400 to-orange-500 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-white/25 flex items-center justify-center text-orange-600 font-bold text-lg">HB</div>
+            <div>
+                <h2 class="text-lg font-bold text-white">Hepsiburada</h2>
+                <p class="text-orange-100 text-sm">Satıcı ID, API Key ve API Secret bilgilerinizi girin.</p>
+            </div>
+        </div>
+        <form id="hepsiburadaForm" class="p-6 space-y-4">
+            <div>
+                <label for="hepsiburada_seller_id" class="block text-sm font-medium text-slate-700 mb-1">Satıcı ID</label>
+                <input type="text" id="hepsiburada_seller_id" name="hepsiburada_seller_id" placeholder="Örn: 123456" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 text-sm" autocomplete="off" />
+            </div>
+            <div>
+                <label for="hepsiburada_api_key" class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
+                <input type="password" id="hepsiburada_api_key" name="hepsiburada_api_key" placeholder="API anahtarınız" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 text-sm" autocomplete="off" />
+            </div>
+            <div>
+                <label for="hepsiburada_api_secret" class="block text-sm font-medium text-slate-700 mb-1">API Secret</label>
+                <input type="password" id="hepsiburada_api_secret" name="hepsiburada_api_secret" placeholder="API gizli anahtarınız" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 text-sm" autocomplete="off" />
+            </div>
+            <div id="formMessageHepsiburada" class="hidden text-sm rounded-xl p-3"></div>
+            <button type="submit" id="btnSaveHepsiburada" class="w-full inline-flex items-center justify-center px-4 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition disabled:opacity-50">
+                Kaydet
+            </button>
+        </form>
+    </div>
+
+    <!-- N11 kartı - mor/sarı -->
+    <div class="rounded-2xl border-2 border-violet-400 bg-white shadow-lg overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-300/90 flex items-center justify-center text-violet-800 font-bold text-lg">N11</div>
+            <div>
+                <h2 class="text-lg font-bold text-white">N11</h2>
+                <p class="text-violet-200 text-sm">Satıcı ID, API Key ve API Secret bilgilerinizi girin.</p>
+            </div>
+        </div>
+        <form id="n11Form" class="p-6 space-y-4">
+            <div>
+                <label for="n11_seller_id" class="block text-sm font-medium text-slate-700 mb-1">Satıcı ID</label>
+                <input type="text" id="n11_seller_id" name="n11_seller_id" placeholder="Örn: 123456" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm" autocomplete="off" />
+            </div>
+            <div>
+                <label for="n11_api_key" class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
+                <input type="password" id="n11_api_key" name="n11_api_key" placeholder="API anahtarınız" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm" autocomplete="off" />
+            </div>
+            <div>
+                <label for="n11_api_secret" class="block text-sm font-medium text-slate-700 mb-1">API Secret</label>
+                <input type="password" id="n11_api_secret" name="n11_api_secret" placeholder="API gizli anahtarınız" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm" autocomplete="off" />
+            </div>
+            <div id="formMessageN11" class="hidden text-sm rounded-xl p-3"></div>
+            <button type="submit" id="btnSaveN11" class="w-full inline-flex items-center justify-center px-4 py-3 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition disabled:opacity-50">
+                Kaydet
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Trendyol form
+    var formT = document.getElementById('trendyolForm');
+    var btnT = document.getElementById('btnSaveTrendyol');
+    var msgT = document.getElementById('formMessageTrendyol');
+    if (formT && btnT && msgT) {
+        formT.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var sellerId = (document.getElementById('trendyol_seller_id') && document.getElementById('trendyol_seller_id').value) ? document.getElementById('trendyol_seller_id').value.trim() : '';
+            var apiKey = (document.getElementById('trendyol_api_key') && document.getElementById('trendyol_api_key').value) ? document.getElementById('trendyol_api_key').value.trim() : '';
+            var apiSecret = (document.getElementById('trendyol_api_secret') && document.getElementById('trendyol_api_secret').value) ? document.getElementById('trendyol_api_secret').value.trim() : '';
+            btnT.disabled = true; msgT.classList.add('hidden');
+            var payload = { trendyol_seller_id: sellerId, trendyol_api_key: apiKey, trendyol_api_secret: apiSecret };
+            try {
+                var res = await fetch('/api/save-trendyol-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                var data = await res.json().catch(function() { return {}; });
+                if (res.ok && data.success) {
+                    msgT.textContent = '✅ ' + (data.message || 'Trendyol bilgileri kaydedildi. Yönlendiriliyorsunuz...');
+                    msgT.className = 'text-sm rounded-xl p-3 bg-emerald-50 text-emerald-800 border border-emerald-200'; msgT.classList.remove('hidden');
+                    setTimeout(function() { window.location.href = '/dashboard/trendyol'; }, 1200);
+                } else {
+                    msgT.textContent = '❌ ' + (data.error || data.message || 'Kayıt başarısız.');
+                    msgT.className = 'text-sm rounded-xl p-3 bg-red-50 text-red-800 border border-red-200'; msgT.classList.remove('hidden');
+                }
+            } catch (err) {
+                msgT.textContent = '❌ İstek gönderilemedi: ' + err.message;
+                msgT.className = 'text-sm rounded-xl p-3 bg-red-50 text-red-800 border border-red-200'; msgT.classList.remove('hidden');
+            }
+            btnT.disabled = false;
+        });
+        {% if trendyol_settings %}
+        if (document.getElementById('trendyol_seller_id')) document.getElementById('trendyol_seller_id').value = {{ (trendyol_settings.seller_id or '')|tojson }};
+        {% endif %}
+    }
+
+    // Hepsiburada form
+    var formHB = document.getElementById('hepsiburadaForm');
+    var btnHB = document.getElementById('btnSaveHepsiburada');
+    var msgHB = document.getElementById('formMessageHepsiburada');
+    if (formHB && btnHB && msgHB) {
+        formHB.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var sellerId = (document.getElementById('hepsiburada_seller_id') && document.getElementById('hepsiburada_seller_id').value) ? document.getElementById('hepsiburada_seller_id').value.trim() : '';
+            var apiKey = (document.getElementById('hepsiburada_api_key') && document.getElementById('hepsiburada_api_key').value) ? document.getElementById('hepsiburada_api_key').value.trim() : '';
+            var apiSecret = (document.getElementById('hepsiburada_api_secret') && document.getElementById('hepsiburada_api_secret').value) ? document.getElementById('hepsiburada_api_secret').value.trim() : '';
+            btnHB.disabled = true; msgHB.classList.add('hidden');
+            var payload = { hepsiburada_seller_id: sellerId, hepsiburada_api_key: apiKey, hepsiburada_api_secret: apiSecret };
+            try {
+                var res = await fetch('/api/save-hepsiburada-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                var data = await res.json().catch(function() { return {}; });
+                if (res.ok && data.success) {
+                    msgHB.textContent = '✅ ' + (data.message || 'Hepsiburada bilgileri kaydedildi. Yönlendiriliyorsunuz...');
+                    msgHB.className = 'text-sm rounded-xl p-3 bg-emerald-50 text-emerald-800 border border-emerald-200'; msgHB.classList.remove('hidden');
+                    setTimeout(function() { window.location.href = '/dashboard/hepsiburada'; }, 1200);
+                } else {
+                    msgHB.textContent = '❌ ' + (data.error || data.message || 'Kayıt başarısız.');
+                    msgHB.className = 'text-sm rounded-xl p-3 bg-red-50 text-red-800 border border-red-200'; msgHB.classList.remove('hidden');
+                }
+            } catch (err) {
+                msgHB.textContent = '❌ İstek gönderilemedi: ' + err.message;
+                msgHB.className = 'text-sm rounded-xl p-3 bg-red-50 text-red-800 border border-red-200'; msgHB.classList.remove('hidden');
+            }
+            btnHB.disabled = false;
+        });
+        {% if hepsiburada_settings %}
+        if (document.getElementById('hepsiburada_seller_id')) document.getElementById('hepsiburada_seller_id').value = {{ (hepsiburada_settings.seller_id or '')|tojson }};
+        {% endif %}
+    }
+
+    // N11 form
+    var formN11 = document.getElementById('n11Form');
+    var btnN11 = document.getElementById('btnSaveN11');
+    var msgN11 = document.getElementById('formMessageN11');
+    if (formN11 && btnN11 && msgN11) {
+        formN11.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var sellerId = (document.getElementById('n11_seller_id') && document.getElementById('n11_seller_id').value) ? document.getElementById('n11_seller_id').value.trim() : '';
+            var apiKey = (document.getElementById('n11_api_key') && document.getElementById('n11_api_key').value) ? document.getElementById('n11_api_key').value.trim() : '';
+            var apiSecret = (document.getElementById('n11_api_secret') && document.getElementById('n11_api_secret').value) ? document.getElementById('n11_api_secret').value.trim() : '';
+            btnN11.disabled = true; msgN11.classList.add('hidden');
+            var payload = { n11_seller_id: sellerId, n11_api_key: apiKey, n11_api_secret: apiSecret };
+            try {
+                var res = await fetch('/api/save-n11-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                var data = await res.json().catch(function() { return {}; });
+                if (res.ok && data.success) {
+                    msgN11.textContent = '✅ ' + (data.message || 'N11 bilgileri kaydedildi. Yönlendiriliyorsunuz...');
+                    msgN11.className = 'text-sm rounded-xl p-3 bg-emerald-50 text-emerald-800 border border-emerald-200'; msgN11.classList.remove('hidden');
+                    setTimeout(function() { window.location.href = '/dashboard/n11'; }, 1200);
+                } else {
+                    msgN11.textContent = '❌ ' + (data.error || data.message || 'Kayıt başarısız.');
+                    msgN11.className = 'text-sm rounded-xl p-3 bg-red-50 text-red-800 border border-red-200'; msgN11.classList.remove('hidden');
+                }
+            } catch (err) {
+                msgN11.textContent = '❌ İstek gönderilemedi: ' + err.message;
+                msgN11.className = 'text-sm rounded-xl p-3 bg-red-50 text-red-800 border border-red-200'; msgN11.classList.remove('hidden');
+            }
+            btnN11.disabled = false;
+        });
+        {% if n11_settings %}
+        if (document.getElementById('n11_seller_id')) document.getElementById('n11_seller_id').value = {{ (n11_settings.seller_id or '')|tojson }};
+        {% endif %}
+    }
+})();
+</script>
+{% endblock %}

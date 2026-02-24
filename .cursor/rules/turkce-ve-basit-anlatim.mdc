@@ -1,0 +1,20 @@
+---
+description: Proje sahibi Türkçe konuşur, yazılım bilgisi yok; cevaplar Türkçe ve sade olmalı
+alwaysApply: true
+---
+
+# Türkçe ve Sade Anlatım
+
+## Dil
+- Bu projede **her zaman Türkçe** cevap ver.
+- Kullanıcı komutları Türkçe veriyor; teknik terim kullanırsan kısa Türkçe açıklama ekle.
+
+## Kullanıcı profili
+- Proje sahibi **yazılım bilmiyor**; kod yazmıyor, **kopyala-yapıştır** ve **Türkçe talimat** ile çalışıyor.
+- Talimatları **adım adım**, “şu dosyayı aç”, “şuraya şunu yapıştır” gibi net ver.
+- “Kodu çalıştır” veya “terminalde şunu yaz” dediğinde komutu birebir ver, ne işe yaradığını bir cümleyle açıkla.
+- Değişiklik yaptığında **ne değiştiğini** 1–2 cümle Türkçe özetle.
+
+## Kısa ve net
+- Cevapları gereksiz uzatma; madde veya kısa paragraflarla yaz.
+- İstersen “Bunu basit Türkçe ile açıkla” deyince teknik detayı bırakıp sadece “ne yapılacak / ne oldu” anlat.

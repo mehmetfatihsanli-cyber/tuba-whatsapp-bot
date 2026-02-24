@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ current_user.company_name }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        'kommo-bg': '#f8fafc',
+                        'kommo-sidebar': '#1e293b',
+                        'kommo-sidebar-hover': '#334155',
+                        'kommo-accent': '#2563eb',
+                        'kommo-accent-light': '#eff6ff'
+                    },
+                    boxShadow: {
+                        'card': '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
+                        'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .support-btn-hover { transition: transform 0.25s ease; }
+        .support-btn-hover:hover { transform: scale(1.12); animation: support-wiggle 0.6s ease-in-out; }
+        @keyframes support-wiggle {
+            0%, 100% { transform: scale(1.12) rotate(0deg); }
+            25% { transform: scale(1.14) rotate(-3deg); }
+            75% { transform: scale(1.14) rotate(3deg); }
+        }
+        /* Mobil: sidebar kapalıyken sola taşlı, açıkken görünür */
+        @media (max-width: 1023px) {
+            #panel-sidebar { transform: translateX(-100%); }
+            body.sidebar-open #panel-sidebar { transform: translateX(0); }
+            body.sidebar-open #sidebar-backdrop { opacity: 1; pointer-events: auto; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-kommo-bg antialiased" id="body-el">
+    {% if skip_login %}
+    <div class="bg-amber-100 text-amber-800 py-2 text-center text-sm border-b border-amber-300">Şifre kapalı – paneli şekillendirme modu (PANEL_SKIP_LOGIN=1).</div>
+    {% endif %}
+    <div class="flex min-h-screen lg:h-screen">
+        <!-- Backdrop: sadece mobilde menü açıkken -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 lg:hidden opacity-0 pointer-events-none transition-opacity duration-300" aria-hidden="true"></div>
+        <!-- Sol sidebar: mobilde drawer, masaüstünde boydan boya sabit -->
+        <aside id="panel-sidebar" class="fixed lg:relative top-0 left-0 z-50 h-full lg:min-h-screen w-72 lg:w-60 bg-kommo-sidebar flex flex-col flex-shrink-0 transition-transform duration-300 ease-out lg:translate-x-0">
+            <div class="p-5 border-b border-slate-600/50 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-3 min-w-0">
+                    {% if current_user.logo_url %}
+                    <img src="{{ current_user.logo_url }}" alt="" class="h-9 w-9 object-contain opacity-95 flex-shrink-0" />
+                    {% else %}
+                    <div class="h-9 w-9 rounded-lg bg-slate-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">{{ (current_user.company_name or "P")[0] }}</div>
+                    {% endif %}
+                    <p class="font-semibold text-white truncate text-sm">{{ current_user.company_name }}</p>
+                </div>
+                <button type="button" id="sidebar-close" class="lg:hidden p-2 rounded-lg text-slate-400 hover:bg-kommo-sidebar-hover hover:text-white transition" aria-label="Menüyü kapat">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <nav class="flex-1 py-4 px-3 space-y-0.5">
+                <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard' %}bg-kommo-accent text-white{% endif %}">
+                    <span class="flex-shrink-0" aria-hidden="true"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12.75V21a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h2.25a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75V12.75M18.45 5.55a2.25 2.25 0 00-3.182-3.182l-1.172 1.171A2.25 2.25 0 0015 6.172v2.25h-1.5V4.5A.75.75 0 0013.5 3.75h-2.25a.75.75 0 00-.75.75v6.75h4.5v-2.25a.75.75 0 01.75-.75h2.25a.75.75 0 01.75.75v2.25h4.5z"/></svg></span>
+                    <span class="text-sm font-medium">Genel Bakış</span>
+                </a>
+                <details class="group" {% if request.path == '/dashboard/messages' or request.path == '/dashboard/pipeline' %}open{% endif %}>
+                    <summary class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span class="flex-shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg></span>
+                        <span class="text-sm font-medium">Müşteriler</span>
+                    </summary>
+                    <div class="mt-0.5 ml-2 pl-4 border-l border-slate-600/50 space-y-0.5">
+                        <a href="/dashboard/pipeline" class="flex items-center gap-2 py-2 px-2 rounded-md text-slate-400 hover:bg-kommo-sidebar-hover hover:text-white transition-colors text-xs font-medium {% if request.path == '/dashboard/pipeline' %}bg-kommo-accent text-white{% endif %}">
+                            <span class="flex-shrink-0 w-4 h-4 flex items-center justify-center"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg></span>
+                            Satış Panosu</a>
+                        <a href="/dashboard/messages?hat=satis" class="flex items-center gap-2 py-2 px-2 rounded-md text-slate-400 hover:bg-kommo-sidebar-hover hover:text-white transition-colors text-xs font-medium {% if request.path == '/dashboard/messages' and request.args.get('hat') == 'satis' %}bg-kommo-accent text-white{% endif %}">
+                            <span class="flex-shrink-0 w-4 h-4 flex items-center justify-center"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg></span>
+                            Satış Hattı</a>
+                        <a href="/dashboard/messages?hat=iade" class="flex items-center gap-2 py-2 px-2 rounded-md text-slate-400 hover:bg-kommo-sidebar-hover hover:text-white transition-colors text-xs font-medium {% if request.path == '/dashboard/messages' and request.args.get('hat') == 'iade' %}bg-kommo-accent text-white{% endif %}">
+                            <span class="flex-shrink-0 w-4 h-4 flex items-center justify-center"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg></span>
+                            Değişim/İade Hattı</a>
+                    </div>
+                </details>
+                <a href="/dashboard/analiz-raporu" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/analiz-raporu' %}bg-kommo-accent text-white{% endif %}">
+                    <span class="flex-shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg></span>
+                    <span class="text-sm font-medium">Analiz Raporu</span>
+                </a>
+                <a href="/dashboard/studio" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/studio' %}bg-kommo-accent text-white{% endif %}">
+                    <span class="flex-shrink-0" aria-hidden="true"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg></span>
+                    <span class="text-sm font-medium">Model Talimatı</span>
+                </a>
+                <a href="/dashboard/ai-studio" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/ai-studio' %}bg-kommo-accent text-white{% endif %}">
+                    <span class="flex-shrink-0" aria-hidden="true"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/></svg></span>
+                    <span class="text-sm font-medium">AI Stüdyo</span>
+                </a>
+                <div class="pt-2 mt-2 border-t border-slate-600/50">
+                    <p class="px-3 py-1 text-xs font-medium text-slate-500 uppercase tracking-wider">Ayarlar</p>
+                    <a href="/dashboard/trendyol" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/trendyol' %}bg-kommo-accent text-white{% endif %}">
+                        <span class="flex-shrink-0">🛒</span>
+                        <span class="text-sm font-medium">Trendyol Paneli</span>
+                    </a>
+                    <a href="/dashboard/hepsiburada" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/hepsiburada' %}bg-kommo-accent text-white{% endif %}">
+                        <span class="flex-shrink-0">🟠</span>
+                        <span class="text-sm font-medium">Hepsiburada Paneli</span>
+                    </a>
+                    <a href="/dashboard/n11" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/n11' %}bg-kommo-accent text-white{% endif %}">
+                        <span class="flex-shrink-0">🟣</span>
+                        <span class="text-sm font-medium">N11 Paneli</span>
+                    </a>
+                    <a href="/dashboard/integrations" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/integrations' %}bg-kommo-accent text-white{% endif %}">
+                        <span class="flex-shrink-0">⚙️</span>
+                        <span class="text-sm font-medium">Entegrasyonlar</span>
+                    </a>
+                    <a href="/dashboard/settings/whatsapp" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-kommo-sidebar-hover hover:text-white transition-colors {% if request.path == '/dashboard/settings/whatsapp' %}bg-kommo-accent text-white{% endif %}">
+                        <span class="flex-shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.25H15a2.25 2.25 0 012.25 2.25v4.5m-13.5 0V6a2.25 2.25 0 012.25-2.25h4.5M19.5 6v4.5m0 0v10.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 21V15m13.5-4.5h4.5"/></svg></span>
+                        <span class="text-sm font-medium">WhatsApp Bağlantısı</span>
+                    </a>
+                </div>
+            </nav>
+            <div class="p-3 border-t border-slate-600/50 space-y-0.5">
+                <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-kommo-sidebar-hover hover:text-white text-sm transition-colors">
+                    <span class="flex-shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"/></svg></span>
+                    Web Sitesine Dön</a>
+                <a href="/dashboard/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-kommo-sidebar-hover hover:text-white text-sm transition-colors">
+                    <span class="flex-shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg></span>
+                    Çıkış Yap</a>
+            </div>
+        </aside>
+        <!-- Ana içerik: mobilde üst bar + içerik; masaüstünde scroll -->
+        <div class="flex-1 flex flex-col min-w-0 min-h-0">
+            <header class="lg:hidden flex items-center gap-3 p-4 border-b border-slate-200 bg-white flex-shrink-0">
+                <button type="button" id="menu-btn" class="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition" aria-label="Menüyü aç">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <span class="font-semibold text-slate-800 truncate">{{ current_user.company_name }}</span>
+            </header>
+            <main class="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Canlı Destek Widget (Panel / Teknik destek modu) - AI cevaplı -->
+    <div id="support-widget" class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 font-sans">
+        <div id="support-chat-box" class="hidden w-[350px] rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden flex flex-col" style="max-height: 420px;">
+            <div class="flex items-center justify-between px-4 py-3 bg-slate-700 text-white flex-shrink-0">
+                <span class="font-semibold text-sm">Teknik Destek 🛠️</span>
+                <button type="button" id="support-widget-close" class="p-1 rounded hover:bg-slate-600 transition" aria-label="Kapat">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="support-chat-messages" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-slate-50 space-y-3" style="max-height: 280px;">
+                <div class="flex justify-start">
+                    <div class="max-w-[85%] rounded-2xl rounded-tl-sm bg-white px-4 py-2.5 text-slate-800 text-sm shadow-sm border border-slate-100">
+                        Selamlar! Panel, WhatsApp bağlantısı veya bot ayarlarında takıldığınız bir yer varsa yazın; yardımcı olayım.
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 border-t border-slate-200 bg-white flex-shrink-0 flex gap-2">
+                <input type="text" id="support-chat-input" placeholder="Sorunuzu yazın..." class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-slate-400 focus:border-slate-500" maxlength="500" autocomplete="off">
+                <button type="button" id="support-chat-send" class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-50">Gönder</button>
+            </div>
+        </div>
+        <button type="button" id="support-widget-toggle" class="support-btn-hover h-14 w-14 rounded-full bg-slate-600 hover:bg-slate-700 text-white shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2" aria-label="Canlı destek">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+        </button>
+    </div>
+    <script>
+    (function(){
+        var box = document.getElementById('support-chat-box');
+        var toggle = document.getElementById('support-widget-toggle');
+        var closeBtn = document.getElementById('support-widget-close');
+        var messagesEl = document.getElementById('support-chat-messages');
+        var inputEl = document.getElementById('support-chat-input');
+        var sendBtn = document.getElementById('support-chat-send');
+
+        function appendMessage(content, isUser) {
+            var wrap = document.createElement('div');
+            wrap.className = 'flex justify-' + (isUser ? 'end' : 'start');
+            var bubble = document.createElement('div');
+            bubble.className = 'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ' + (isUser ? 'rounded-tr-sm bg-slate-600 text-white' : 'rounded-tl-sm bg-white text-slate-800 border border-slate-100');
+            bubble.textContent = content;
+            wrap.appendChild(bubble);
+            messagesEl.appendChild(wrap);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function setLoading(loading) {
+            sendBtn.disabled = loading;
+            sendBtn.textContent = loading ? '...' : 'Gönder';
+        }
+
+        function sendMessage() {
+            var msg = (inputEl && inputEl.value || '').trim();
+            if (!msg) return;
+            inputEl.value = '';
+            appendMessage(msg, true);
+            setLoading(true);
+            fetch('/api/support-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, context: 'panel' })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                appendMessage(data.reply || 'Cevap alınamadı.', false);
+            }).catch(function() {
+                appendMessage('Bağlantı hatası. Lütfen tekrar deneyin.', false);
+            }).finally(function() { setLoading(false); });
+        }
+
+        function closeBox() { box.classList.add('hidden'); box.classList.remove('flex'); }
+        function isOpen() { return box && !box.classList.contains('hidden'); }
+        if (toggle) toggle.addEventListener('click', function(e){ e.stopPropagation(); box.classList.toggle('hidden'); box.classList.toggle('flex'); });
+        if (closeBtn) closeBtn.addEventListener('click', closeBox);
+        document.addEventListener('click', function(e) {
+            var widget = document.getElementById('support-widget');
+            if (widget && isOpen() && !widget.contains(e.target)) closeBox();
+        });
+        if (sendBtn && inputEl) {
+            sendBtn.addEventListener('click', sendMessage);
+            inputEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendMessage(); });
+        }
+
+        var bodyEl = document.getElementById('body-el');
+        var menuBtn = document.getElementById('menu-btn');
+        var sidebarClose = document.getElementById('sidebar-close');
+        var sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        var panelSidebar = document.getElementById('panel-sidebar');
+        function closeSidebar() { if (bodyEl) bodyEl.classList.remove('sidebar-open'); }
+        if (menuBtn) menuBtn.addEventListener('click', function() { if (bodyEl) bodyEl.classList.add('sidebar-open'); });
+        if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+        if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+        if (panelSidebar) {
+            panelSidebar.querySelectorAll('a').forEach(function(a) {
+                a.addEventListener('click', function() { closeSidebar(); });
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

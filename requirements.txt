@@ -62,6 +62,11 @@ websockets==15.0.1
 Werkzeug==3.1.5
 yarl==1.22.0
 
+# Replicate (Virtual Try-On / IDM-VTON)
+replicate>=0.25.0
+# Görsel kırpma (3:4 manken)
+Pillow>=10.0.0
+
 # Yeni Eklenenler (AI ve Vektör DB)
 pinecone-client==2.2.4
 sentence-transformers==2.5.1

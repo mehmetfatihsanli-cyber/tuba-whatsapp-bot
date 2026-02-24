@@ -20,23 +20,22 @@ class PineconeManager:
         """Metni vektöre dönüştür"""
         return self.model.encode(metin).tolist()
     
-    def urun_ekle(self, urun_id, isim, aciklama, fiyat, stok, gorsel, varyantlar):
-        """Ürünü Pinecone'a ekle"""
-        # Arama metni oluştur
-        arama_metni = f"{isim} {aciklama} {varyantlar}"
+    def urun_ekle(self, urun_id, isim, aciklama, fiyat, stok, gorsel, varyantlar, product_url=None):
+        """Ürünü Pinecone'a ekle. product_url: Tuba sitesindeki ürün sayfası linki (CONTEXT'te modele verilir)."""
+        # Arama metni: ürün kodu (id) dahil ki müşteri "2209_t1" gibi sorunca bulabilsin
+        arama_metni = f"{urun_id} {isim} {aciklama} {varyantlar}"
         vektor = self.metin_vektorune_cevir(arama_metni)
-        
-        # Metadata ile kaydet
-        self.index.upsert([
-            (str(urun_id), vektor, {
-                "isim": isim,
-                "aciklama": aciklama,
-                "fiyat": fiyat,
-                "stok": stok,
-                "gorsel": gorsel,
-                "varyantlar": varyantlar
-            })
-        ])
+        meta = {
+            "isim": isim,
+            "aciklama": aciklama,
+            "fiyat": fiyat,
+            "stok": stok,
+            "gorsel": gorsel,
+            "varyantlar": varyantlar
+        }
+        if product_url and str(product_url).startswith("http"):
+            meta["product_url"] = str(product_url).strip()
+        self.index.upsert([(str(urun_id), vektor, meta)])
     
     def benzer_urunleri_bul(self, sorgu, top_k=5):
         """Müşteri sorgusuna göre ürün ara"""

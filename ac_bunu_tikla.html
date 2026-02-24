@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel aç</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; min-height: 100vh; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .kutu { background: white; padding: 48px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 420px; width: 100%; text-align: center; }
+        h1 { margin: 0 0 8px; font-size: 1.5rem; color: #0f172a; }
+        p { color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+        a { display: inline-block; padding: 16px 32px; background: #2563eb; color: white !important; text-decoration: none; font-weight: 600; font-size: 1.1rem; border-radius: 12px; transition: background 0.2s; }
+        a:hover { background: #1d4ed8; }
+        .kucuk { margin-top: 20px; font-size: 0.85rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="kutu">
+        <h1>Panel linki</h1>
+        <p>Sunucu çalışıyorsa aşağıdaki butona tıklayın. Tarayıcı tam adresi açar (http ve port dahil).</p>
+        <a href="http://127.0.0.1:5001" id="link">Panele git (127.0.0.1:5001)</a>
+        <p class="kucuk">Önce terminalde: python3 app.py (port 5001)</p>
+    </div>
+</body>
+</html>

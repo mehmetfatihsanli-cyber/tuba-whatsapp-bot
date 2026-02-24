@@ -1,0 +1,20 @@
+{% extends "legal/base_legal.html" %}
+{% block title %}Hakkımızda & Künye{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Hakkımızda & Künye</h1>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Hakkımızda</h2>
+<p class="mb-4">{{ company.legal_name or "ŞİRKET_ADI" }}, moda ve perakende sektörüne yönelik yapay zeka destekli müşteri iletişimi ve satış yönetimi yazılımı sunmaktadır. AI Satış ürünü ile işletmeler, WhatsApp ve benzeri kanallar üzerinden 7/24 otomatik ve akıllı müşteri hizmeti verebilmekte, satış ve iade süreçlerini tek panelden yönetebilmektedir. Hizmetimiz SaaS (bulut yazılım) modeliyle abonelik esaslı sunulmaktadır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Künye</h2>
+<ul class="list-none space-y-1 text-slate-700">
+    <li><strong>Ünvan:</strong> {{ company.legal_name or "ŞİRKET_ADI" }}</li>
+    <li><strong>Adres:</strong> {{ company.address or "ADRES" }}</li>
+    <li><strong>Vergi No / Vergi Dairesi:</strong> {{ company.tax_number or "VERGİ_NO" }} / {{ company.tax_office or "VERGİ_DAİRESİ" }}</li>
+    <li><strong>E-posta:</strong> {{ company.email or "ŞİRKET_EMAIL" }}</li>
+    <li><strong>Telefon:</strong> {{ company.phone or "TELEFON" }}</li>
+    {% if company.mersis_no %}<li><strong>MERSİS No:</strong> {{ company.mersis_no }}</li>{% endif %}
+</ul>
+
+<p class="mt-6 text-sm text-slate-500">Bu sayfa, Sanal POS (Iyzico/PayTR) ve yasal gereklilikler kapsamında bilgilendirme amacıyla yayınlanmaktadır.</p>
+{% endblock %}

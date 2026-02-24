@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Model Talimatı – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">Model Talimatı – Ek Talimat / Bot Karakteri</h1>
+    <p class="text-slate-600 text-sm mb-2">
+        Bot her zaman bizim temel kurallarla (iade, değişim, link, satış kuralları) çalışır. Aşağıya yazdığınız metin <strong>ek talimat</strong> olarak modele eklenir; böylece kendi tonunuzu ve vurgularınızı ekleyebilirsiniz.
+    </p>
+    <p class="text-slate-500 text-xs mb-2">
+        Bir kez kaydettiğiniz metin değiştirene kadar kalır. İstediğiniz zaman buradan ekleme veya çıkarma yapıp yeniden kaydedebilirsiniz.
+    </p>
+    <p class="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-xs mb-6">
+        Bu ek talimat <strong>yalnızca {{ current_user.company_name }}</strong> (bu giriş) için geçerlidir. Başka mağazalar kendi panellerinde kendi eklerini yazar; birbirine karışmaz.
+    </p>
+
+    <div class="rounded-2xl border border-slate-200 bg-white shadow card-hover p-6">
+        <label for="extraInstruction" class="block text-sm font-medium text-slate-700 mb-2">Botunuzun ek talimatı (isteğe bağlı)</label>
+        <textarea
+            id="extraInstruction"
+            name="extra_instruction"
+            rows="10"
+            placeholder="Örn: Müşteriye canım, tatlım diye hitap et. Çok samimi ol, emojileri sevgiyle kullan. İndirim sorarsa &#39;%10 yapabiliriz&#39; de."
+            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 placeholder-slate-400 resize-y min-h-[200px]"
+        ></textarea>
+        <div class="mt-4 flex items-center justify-between gap-4">
+            <p id="saveStatus" class="text-sm text-slate-500" aria-live="polite"></p>
+            <button type="button" id="saveBtn" class="px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition shadow-sm">
+                Kaydet
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const textarea = document.getElementById('extraInstruction');
+    const saveBtn = document.getElementById('saveBtn');
+    const statusEl = document.getElementById('saveStatus');
+
+    function setStatus(msg, isError) {
+        statusEl.textContent = msg;
+        statusEl.className = 'text-sm ' + (isError ? 'text-red-600' : 'text-slate-500');
+    }
+
+    // Sayfa açıldığında mevcut ek talimatı yükle
+    fetch('/api/studio/extra-prompt', { method: 'GET', credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.extra_instruction != null)
+                textarea.value = data.extra_instruction;
+        })
+        .catch(function() { setStatus('Yüklenemedi.', true); });
+
+    saveBtn.addEventListener('click', function() {
+        saveBtn.disabled = true;
+        setStatus('Kaydediliyor...');
+        fetch('/api/studio/extra-prompt', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ extra_instruction: textarea.value })
+        })
+        .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, json: j }; }); })
+        .then(function(res) {
+            if (res.ok && res.json.ok) {
+                setStatus('Kaydedildi.');
+            } else {
+                setStatus(res.json.error || 'Kayıt başarısız.', true);
+            }
+        })
+        .catch(function() {
+            setStatus('Kayıt sırasında hata oluştu.', true);
+        })
+        .finally(function() { saveBtn.disabled = false; });
+    });
+})();
+</script>
+{% endblock %}

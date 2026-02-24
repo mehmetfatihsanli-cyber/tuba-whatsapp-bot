@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yapay Zeka ile Satışlarınızı Katlayın</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        'brand': '#2563eb',
+                        'brand-dark': '#1d4ed8',
+                        'surface': '#f8fafc',
+                        'ink': '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-hero { background: linear-gradient(135deg, #0c4a6e 0%, #0f172a 35%, #1e293b 70%, #334155 100%); }
+        .support-btn-hover { transition: transform 0.25s ease; }
+        .support-btn-hover:hover { transform: scale(1.12); animation: support-wiggle 0.6s ease-in-out; }
+        @keyframes support-wiggle {
+            0%, 100% { transform: scale(1.12) rotate(0deg); }
+            25% { transform: scale(1.14) rotate(-3deg); }
+            75% { transform: scale(1.14) rotate(3deg); }
+        }
+        .phone-frame {
+            transform: rotate(-8deg);
+            background: linear-gradient(165deg, #475569 0%, #1e293b 40%, #0f172a 100%);
+            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(148,163,184,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .phone-frame:hover { transform: rotate(-6deg) scale(1.02); transition: transform 0.3s ease; }
+        .wa-chat-bg { background-color: #e5ddd5; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4cbc4' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+        .chat-text { font-size: 13px; line-height: 1.4; letter-spacing: 0.01em; color: #111827; }
+        .chat-time { font-size: 10px; color: #6b7280; }
+    </style>
+</head>
+<body class="bg-white text-slate-800 antialiased">
+    <!-- HEADER -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold text-slate-900">AI Satış</a>
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="/#anasayfa" class="text-slate-600 hover:text-slate-900 font-medium transition">Ana Sayfa</a>
+                <a href="/#ozellikler" class="text-slate-600 hover:text-slate-900 font-medium transition">Özellikler</a>
+                <a href="/#panel-ozellikleri" class="text-slate-600 hover:text-slate-900 font-medium transition">Panel Özellikleri</a>
+                <a href="/#blog" class="text-slate-600 hover:text-slate-900 font-medium transition">Blog</a>
+                <a href="/#fiyatlandirma" class="text-slate-600 hover:text-slate-900 font-medium transition">Fiyatlandırma</a>
+                <a href="/#iletisim" class="text-slate-600 hover:text-slate-900 font-medium transition">İletişim</a>
+            </nav>
+            {% if logged_in %}
+            <a href="/dashboard" class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-sm">Panele Git</a>
+            {% else %}
+            <a href="/login" class="inline-flex items-center px-5 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition shadow-sm">Giriş Yap</a>
+            <a href="/register" class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-sm">Kayıt Ol</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section id="anasayfa" class="gradient-hero min-h-[90vh] flex items-center pt-20 pb-16 px-6">
+        <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
+                    Yapay Zeka ile Satışlarınızı Katlayın
+                </h1>
+                <p class="text-xl text-slate-300 mb-8 max-w-xl">
+                    WhatsApp üzerinden 7/24 müşteri temsilciniz. Kombin önerisi, iade yönetimi ve akıllı satış — hepsi tek panelde.
+                </p>
+                {% if logged_in %}
+                <a href="/dashboard" class="inline-flex items-center px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition shadow-lg text-lg">Panele Git</a>
+                {% else %}
+                <a href="/login" class="inline-flex items-center px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition shadow-lg text-lg">Ücretsiz Dene</a>
+                {% endif %}
+            </div>
+            <div class="relative hidden lg:block">
+                <!-- Telefon: canlı çerçeve, WhatsApp arka planı, gerçekçi mesaj metni -->
+                <div class="max-w-[300px] mx-auto relative">
+                    <div class="phone-frame rounded-[2.5rem] p-2.5 border-[3px] border-slate-400/40 relative">
+                        <div class="rounded-[2rem] overflow-hidden bg-slate-900 shadow-inner" style="box-shadow: inset 0 0 0 2px rgba(15,23,42,0.8);">
+                            <div class="h-7 bg-slate-800 flex items-center justify-center border-b border-slate-700">
+                                <div class="w-16 h-4 rounded-full bg-slate-700"></div>
+                            </div>
+                            <div class="aspect-[9/19] wa-chat-bg p-3 flex flex-col justify-end min-h-[320px]">
+                                <!-- Gelen mesaj -->
+                                <div class="flex gap-2 items-end mb-2">
+                                    <div class="w-8 h-8 rounded-full bg-slate-400 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-300 shadow-sm">
+                                        <span class="text-slate-600 text-[10px] font-semibold">M</span>
+                                    </div>
+                                    <div class="rounded-2xl rounded-tl-sm bg-white py-2.5 px-3 max-w-[75%] shadow-sm" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                                        <p class="chat-text">Merhaba, ürünleriniz var mı?</p>
+                                        <span class="chat-time block text-right mt-1">Şimdi</span>
+                                    </div>
+                                </div>
+                                <!-- Giden mesaj -->
+                                <div class="flex gap-2 items-end justify-end mb-2">
+                                    <div class="rounded-2xl rounded-tr-sm py-2.5 px-3 max-w-[75%] shadow-sm" style="background: #dcf8c6; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                                        <p class="chat-text text-gray-800">Evet, size yardımcı olayım. Hangi ürünleri merak ediyorsunuz?</p>
+                                        <span class="chat-time block text-right mt-1 text-gray-600">Şimdi</span>
+                                    </div>
+                                    <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border border-emerald-500/50 shadow-sm" style="background: #25d366;">
+                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                    </div>
+                                </div>
+                                <div class="text-center pt-1">
+                                    <span class="text-[10px] text-gray-500 font-medium">AI Satış · WhatsApp</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-4 -right-2 w-24 h-20 rounded-full bg-slate-900/50 blur-2xl pointer-events-none" aria-hidden="true"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BİZ KİMİZ -->
+    <section class="py-20 px-6 bg-slate-50">
+        <div class="max-w-6xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Biz Kimiz?</h2>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-12">
+                Moda ve perakende mağazaları için yapay zeka destekli müşteri iletişimi çözümü sunuyoruz. Müşterilerinizle WhatsApp üzerinden anında, kişiselleştirilmiş ve satış odaklı konuşmalar yürütün.
+            </p>
+            <div class="flex flex-wrap justify-center gap-8">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
+                    </div>
+                    <span class="font-medium text-slate-700">AI Temsilci</span>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+                    </div>
+                    <span class="font-medium text-slate-700">WhatsApp</span>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-600">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+                    </div>
+                    <span class="font-medium text-slate-700">Panel</span>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                    </div>
+                    <span class="font-medium text-slate-700">Satış</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ÖZELLİKLER -->
+    <section id="ozellikler" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-slate-900 text-center mb-12">Özellikler</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-8 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-900 mb-2">7/24 Müşteri Temsilcisi</h3>
+                    <p class="text-slate-600">Yapay zeka asistanı gece gündüz müşterilerinize yanıt verir, sipariş ve iade taleplerini yönetir.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-8 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 0115.414-2.16c.378.274.756.544 1.134.809M16.5 11.25l-4.474-4.475L15 6.75M22 9a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-900 mb-2">Otomatik Satış</h3>
+                    <p class="text-slate-600">Ürün önerisi, kampanya bilgisi ve doğru anlarda tekliflerle satışları artırın.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-8 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-900 mb-2">Kombin Önerisi</h3>
+                    <p class="text-slate-600">Müşteri tercihlerine göre kişiselleştirilmiş kombin ve stil önerileri sunun.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PANELDE NELER VAR? -->
+    <section id="panel-ozellikleri" class="py-20 px-6 bg-slate-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-slate-900 text-center mb-4">Panelde Neler Var?</h2>
+            <p class="text-slate-600 text-center mb-12 max-w-2xl mx-auto">Tek panelde tüm güç: AI asistanınızı yönetin, satışı izleyin, raporları görün. Hepsi giriş yapınca tek tıkla erişilebilir.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Model Talimatı</h3>
+                    <p class="text-slate-600 text-sm">Mağazanıza özel AI talimatları. Asistanı kendi dilinizle, kendi kurallarınızla yönetin.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Akıllı Bot</h3>
+                    <p class="text-slate-600 text-sm">Satış ve iade ayrı hatlar. Canlı, Dinle+Analiz veya Kapalı — tam kontrol sizde.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Analiz & Akıllanma</h3>
+                    <p class="text-slate-600 text-sm">Dinle-analiz modu: Bot konuşmalardan öğrenir, satış ve iade cevaplarını sürekli iyileştirir.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.38 3.39a15.995 15.995 0 004.769-2.95m0 0a15.997 15.997 0 00-3.57-3.57"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">AI Stüdyo</h3>
+                    <p class="text-slate-600 text-sm">Sanal deneme: Müşteri kıyafeti mankene giydirip tek tıkla WhatsApp’tan paylaşabilsin.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Satış Panosu</h3>
+                    <p class="text-slate-600 text-sm">Müşteri hunisi tek ekranda: Aşamalar, KPI’lar ve canlı mesaj akışı.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Analiz Raporu</h3>
+                    <p class="text-slate-600 text-sm">Son günlerin konuşma özeti: Niyet, duygu ve eğilimler tek raporda.</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <p class="text-slate-600 mb-4">Tüm bu özelliklere panel üzerinden tek tıkla ulaşın.</p>
+                {% if logged_in %}
+                <a href="/dashboard" class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg">Panele Git</a>
+                {% else %}
+                <a href="/register" class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg">Hemen Dene</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- BLOG / HABERLER -->
+    <section id="blog" class="py-20 px-6 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-slate-900 text-center mb-12">Blog & Haberler</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <a href="#" class="block bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition group">
+                    <div class="h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-semibold text-slate-900 group-hover:text-blue-600 transition">2026 Moda Trendleri</h3>
+                        <p class="text-sm text-slate-500 mt-1">Bu sezon nelere dikkat etmeli?</p>
+                    </div>
+                </a>
+                <a href="#" class="block bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition group">
+                    <div class="h-40 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-semibold text-slate-900 group-hover:text-blue-600 transition">AI ile Müşteri Deneyimi</h3>
+                        <p class="text-sm text-slate-500 mt-1">Perakendede yapay zeka kullanımı.</p>
+                    </div>
+                </a>
+                <a href="#" class="block bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition group">
+                    <div class="h-40 bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.25h3M6.75 21.75h10.5A2.25 2.25 0 0019.5 19.5V4.5A2.25 2.25 0 0017.25 2.25H6.75A2.25 2.25 0 004.5 4.5v15A2.25 2.25 0 006.75 21.75z"/></svg>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-semibold text-slate-900 group-hover:text-blue-600 transition">WhatsApp Business İpuçları</h3>
+                        <p class="text-sm text-slate-500 mt-1">Dönüşümü artıran 5 uygulama.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FİYAT TABLOSU -->
+    <section id="fiyatlandirma" class="py-20 px-6 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-slate-900 text-center mb-4">Fiyatlandırma</h2>
+            <p class="text-slate-600 text-center mb-12 max-w-2xl mx-auto">İhtiyacınıza uygun paketi seçin. Kredi kartı bilgisi olmadan başlayabilirsiniz.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="rounded-2xl border-2 border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition flex flex-col">
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Başlangıç</h3>
+                    <p class="text-slate-600 text-sm mb-6">Küçük mağazalar için ideal</p>
+                    <p class="text-3xl font-extrabold text-slate-900 mb-1">990₺<span class="text-sm font-normal text-slate-500">/ay</span></p>
+                    <ul class="text-slate-600 text-sm space-y-2 mb-8 flex-1">
+                        <li>1 WhatsApp numarası</li>
+                        <li>AI asistan</li>
+                        <li>Panel erişimi</li>
+                    </ul>
+                    <a href="/register" class="block w-full text-center px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition">Başla</a>
+                </div>
+                <div class="rounded-2xl border-2 border-blue-500 bg-white p-8 shadow-lg relative flex flex-col">
+                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-600 text-white text-xs font-semibold rounded-full">Önerilen</span>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">PRO</h3>
+                    <p class="text-slate-600 text-sm mb-6">Büyüyen satışlar için</p>
+                    <p class="text-3xl font-extrabold text-blue-600 mb-1">1.990₺<span class="text-sm font-normal text-slate-500">/ay</span></p>
+                    <ul class="text-slate-600 text-sm space-y-2 mb-8 flex-1">
+                        <li>2 WhatsApp numarası</li>
+                        <li>Öncelikli destek</li>
+                        <li>Satış + İade hatları</li>
+                    </ul>
+                    <a href="/register" class="block w-full text-center px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">Başla</a>
+                </div>
+                <div class="rounded-2xl border-2 border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition flex flex-col">
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Enterprise</h3>
+                    <p class="text-slate-600 text-sm mb-6">Kurumsal ihtiyaçlar</p>
+                    <p class="text-2xl font-extrabold text-slate-900 mb-1">Teklif</p>
+                    <ul class="text-slate-600 text-sm space-y-2 mb-8 flex-1">
+                        <li>Sınırsız numara</li>
+                        <li>Özel entegrasyon</li>
+                        <li>Dedicated destek</li>
+                    </ul>
+                    <a href="/register" class="block w-full text-center px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition">İletişime Geç</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- İLETİŞİM / CTA -->
+    <section id="iletisim" class="py-20 px-6">
+        <div class="max-w-3xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Hemen Başlayın</h2>
+            <p class="text-slate-600 mb-8">Demo ve bilgi için bizimle iletişime geçin veya panele giriş yapın.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                {% if logged_in %}
+                <a href="/dashboard" class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">Panele Git</a>
+                {% else %}
+                <a href="/login" class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">Giriş Yap</a>
+                {% endif %}
+                <a href="mailto:info@example.com" class="inline-flex items-center px-8 py-4 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition">İletişim</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-8 px-6 border-t border-slate-200 bg-slate-50">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+                <p class="text-slate-500 text-sm">© 2026 AI Satış. Tüm hakları saklıdır.</p>
+                <div class="flex flex-wrap gap-4 md:gap-6 justify-center">
+                    <a href="/#ozellikler" class="text-slate-500 hover:text-slate-700 text-sm">Özellikler</a>
+                    <a href="/#blog" class="text-slate-500 hover:text-slate-700 text-sm">Blog</a>
+                    <a href="/legal/privacy" class="text-slate-500 hover:text-slate-700 text-sm">Gizlilik Politikası</a>
+                    <a href="/legal/terms" class="text-slate-500 hover:text-slate-700 text-sm">Kullanım Koşulları</a>
+                    <a href="/legal/sales-agreement" class="text-slate-500 hover:text-slate-700 text-sm">Mesafeli Satış</a>
+                    <a href="/legal/cancellation" class="text-slate-500 hover:text-slate-700 text-sm">İptal ve İade</a>
+                    <a href="/legal/about" class="text-slate-500 hover:text-slate-700 text-sm">Hakkımızda</a>
+                    {% if logged_in %}
+                    <a href="/dashboard" class="text-slate-500 hover:text-slate-700 text-sm font-medium">Panel</a>
+                    {% else %}
+                    <a href="/login" class="text-slate-500 hover:text-slate-700 text-sm font-medium">Giriş</a>
+                    {% endif %}
+                </div>
+            </div>
+            <p class="text-slate-400 text-xs mb-2">Tüm ödemeler 256-bit SSL ile korunmaktadır.</p>
+            <div class="flex items-center gap-3 text-slate-400">
+                <span class="text-xs">Güvenli ödeme:</span>
+                <svg class="h-5 w-7 flex-shrink-0" viewBox="0 0 40 24" fill="none" aria-hidden="true"><rect width="40" height="24" rx="4" fill="#EB001B"/><rect x="16" width="24" height="24" rx="4" fill="#F79E1B"/><path d="M24 16.5a6 6 0 110-9 6 6 0 010 9z" fill="#FF5F00"/></svg>
+                <span class="text-xs text-slate-500">Mastercard</span>
+                <span class="text-xs text-slate-500">·</span>
+                <span class="text-xs font-medium text-slate-500">Iyzico</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Canlı Destek Widget (Ziyaretçi modu) - AI cevaplı -->
+    <div id="support-widget" class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 font-sans">
+        <div id="support-chat-box" class="hidden w-[350px] rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden flex flex-col" style="max-height: 420px;">
+            <div class="flex items-center justify-between px-4 py-3 bg-amber-500 text-white flex-shrink-0">
+                <span class="font-semibold text-sm">Satış Asistanı 🤖</span>
+                <button type="button" id="support-widget-close" class="p-1 rounded hover:bg-white/20 transition" aria-label="Kapat">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="support-chat-messages" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-slate-50 space-y-3" style="max-height: 280px;">
+                <div class="flex justify-start">
+                    <div class="max-w-[85%] rounded-2xl rounded-tl-sm bg-white px-4 py-2.5 text-slate-800 text-sm shadow-sm border border-slate-100">
+                        Merhaba! Paketlerimiz hakkında bilgi almak, fiyatları öğrenmek veya demo görmek ister misiniz? Sorunuzu yazın, size yardımcı olayım.
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 border-t border-slate-200 bg-white flex-shrink-0 flex gap-2">
+                <input type="text" id="support-chat-input" placeholder="Mesajınızı yazın..." class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-500" maxlength="500" autocomplete="off">
+                <button type="button" id="support-chat-send" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition disabled:opacity-50">Gönder</button>
+            </div>
+        </div>
+        <button type="button" id="support-widget-toggle" class="support-btn-hover h-14 w-14 rounded-full bg-amber-500 hover:bg-amber-600 text-white shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2" aria-label="Canlı destek">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+        </button>
+    </div>
+    <script>
+    (function(){
+        var box = document.getElementById('support-chat-box');
+        var toggle = document.getElementById('support-widget-toggle');
+        var closeBtn = document.getElementById('support-widget-close');
+        var messagesEl = document.getElementById('support-chat-messages');
+        var inputEl = document.getElementById('support-chat-input');
+        var sendBtn = document.getElementById('support-chat-send');
+
+        function appendMessage(content, isUser) {
+            var wrap = document.createElement('div');
+            wrap.className = 'flex justify-' + (isUser ? 'end' : 'start');
+            var bubble = document.createElement('div');
+            bubble.className = 'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ' + (isUser ? 'rounded-tr-sm bg-amber-500 text-white' : 'rounded-tl-sm bg-white text-slate-800 border border-slate-100');
+            bubble.textContent = content;
+            wrap.appendChild(bubble);
+            messagesEl.appendChild(wrap);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function setLoading(loading) {
+            sendBtn.disabled = loading;
+            sendBtn.textContent = loading ? '...' : 'Gönder';
+        }
+
+        function sendMessage() {
+            var msg = (inputEl && inputEl.value || '').trim();
+            if (!msg) return;
+            inputEl.value = '';
+            appendMessage(msg, true);
+            setLoading(true);
+            fetch('/api/support-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, context: 'website' })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                appendMessage(data.reply || 'Cevap alınamadı.', false);
+            }).catch(function() {
+                appendMessage('Bağlantı hatası. Lütfen tekrar deneyin.', false);
+            }).finally(function() { setLoading(false); });
+        }
+
+        function closeBox() { box.classList.add('hidden'); box.classList.remove('flex'); }
+        function isOpen() { return box && !box.classList.contains('hidden'); }
+        if (toggle) toggle.addEventListener('click', function(e){ e.stopPropagation(); box.classList.toggle('hidden'); box.classList.toggle('flex'); });
+        if (closeBtn) closeBtn.addEventListener('click', closeBox);
+        document.addEventListener('click', function(e) {
+            var widget = document.getElementById('support-widget');
+            if (widget && isOpen() && !widget.contains(e.target)) closeBox();
+        });
+        if (sendBtn && inputEl) {
+            sendBtn.addEventListener('click', sendMessage);
+            inputEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendMessage(); });
+        }
+    })();
+    </script>
+</body>
+</html>

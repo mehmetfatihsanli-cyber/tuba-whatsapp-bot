@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Analiz Raporu – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Dinleme Analiz Raporu</h1>
+    <p class="text-slate-500 text-sm mb-6">Dinle + Analiz modunda toplanan mesaj analizleri. Son <select id="days" class="border border-slate-300 rounded-lg px-2 py-1 text-sm"><option value="2">2</option><option value="3">3</option><option value="7">7</option><option value="14">14</option></select> gün.</p>
+
+    <div id="summary" class="bg-white rounded-xl border border-slate-200 p-6 mb-6 hidden">
+        <h2 class="font-semibold text-slate-800 mb-3">Özet</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div><span class="text-slate-500">Toplam analiz</span><p class="font-semibold text-slate-800" id="sum-total">0</p></div>
+            <div><span class="text-slate-500">Satış hattı</span><p class="font-semibold text-slate-800" id="sum-sales">0</p></div>
+            <div><span class="text-slate-500">Değişim hattı</span><p class="font-semibold text-slate-800" id="sum-exchange">0</p></div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <p class="text-slate-500 text-xs mb-1">Niyet dağılımı</p>
+            <pre id="sum-intent" class="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg overflow-x-auto"></pre>
+        </div>
+        <div class="mt-2">
+            <p class="text-slate-500 text-xs mb-1">Duygu dağılımı</p>
+            <pre id="sum-sentiment" class="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg overflow-x-auto"></pre>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h2 class="font-semibold text-slate-800 mb-3">Analiz kayıtları (metin)</h2>
+        <div id="report-text" class="space-y-4 max-h-[60vh] overflow-y-auto text-sm text-slate-700">
+            <p class="text-slate-400">Yükleniyor…</p>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var daysEl = document.getElementById('days');
+    var reportEl = document.getElementById('report-text');
+    var summaryEl = document.getElementById('summary');
+
+    function load() {
+        var days = daysEl ? daysEl.value : 2;
+        reportEl.innerHTML = '<p class="text-slate-400">Yükleniyor…</p>';
+        fetch('/api/analiz-raporu?days=' + days).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.error) {
+                reportEl.innerHTML = '<p class="text-amber-600">Giriş gerekli veya veri alınamadı.</p>';
+                return;
+            }
+            var items = data.items || [];
+            var summary = data.summary || { total: 0, by_line: {}, by_intent: {}, by_sentiment: {} };
+
+            summaryEl.classList.remove('hidden');
+            document.getElementById('sum-total').textContent = summary.total || 0;
+            document.getElementById('sum-sales').textContent = (summary.by_line && summary.by_line.sales) || 0;
+            document.getElementById('sum-exchange').textContent = (summary.by_line && summary.by_line.exchange) || 0;
+            document.getElementById('sum-intent').textContent = JSON.stringify(summary.by_intent || {}, null, 2);
+            document.getElementById('sum-sentiment').textContent = JSON.stringify(summary.by_sentiment || {}, null, 2);
+
+            if (items.length === 0) {
+                reportEl.innerHTML = '<p class="text-slate-500">Bu dönemde Dinle+Analiz modunda kayıt yok. Önce Genel Bakıştan ilgili hatta "Dinle + Analiz" seçin.</p>';
+                return;
+            }
+            var lines = items.map(function(row) {
+                var hat = (row.line || 'sales') === 'exchange' ? 'Değişim' : 'Satış';
+                var time = row.created_at ? new Date(row.created_at).toLocaleString('tr-TR') : '';
+                var body = (row.message_body || '').slice(0, 200) + ((row.message_body || '').length > 200 ? '…' : '');
+                var sent = row.sentiment || '—';
+                var intent = row.intent || '—';
+                var urg = row.urgency || '—';
+                return '[' + time + '] ' + hat + ' · ' + (row.phone || '') + '\n  Mesaj: ' + body + '\n  Duygu: ' + sent + '  Niyet: ' + intent + '  Aciliyet: ' + urg;
+            });
+            reportEl.innerHTML = '<pre class="whitespace-pre-wrap font-sans text-slate-700">' + lines.join('\n\n') + '</pre>';
+        }).catch(function() {
+            reportEl.innerHTML = '<p class="text-red-500">Yüklenemedi.</p>';
+        });
+    }
+
+    if (daysEl) daysEl.addEventListener('change', load);
+    load();
+})();
+</script>
+{% endblock %}

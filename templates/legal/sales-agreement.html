@@ -1,0 +1,25 @@
+{% extends "legal/base_legal.html" %}
+{% block title %}Mesafeli Satış Sözleşmesi{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Mesafeli Satış Sözleşmesi</h1>
+<p class="text-slate-600 mb-4">6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği kapsamında düzenlenmiştir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Taraflar</h2>
+<p class="mb-4"><strong>SATICI:</strong> {{ company.legal_name or "ŞİRKET_ADI" }}, adres: {{ company.address or "ADRES" }}, vergi no / vergi dairesi: {{ company.tax_number or "VERGİ_NO" }} / {{ company.tax_office or "VERGİ_DAİRESİ" }}, e-posta: {{ company.email or "ŞİRKET_EMAIL" }}.</p>
+<p class="mb-4"><strong>ALICI:</strong> Sözleşmeyi elektronik ortamda onaylayan ve abonelik satın alan gerçek veya tüzel kişi.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Konu</h2>
+<p class="mb-4">Sözleşmenin konusu, Alıcının Satıcıdan mesafeli olarak satın aldığı “AI Satış” SaaS yazılım hizmeti aboneliğine ilişkin tarafların hak ve yükümlülükleridir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Hizmetin İfası</h2>
+<p class="mb-4">Hizmet, ödeme onayı ve hesap açılımı sonrası elektronik ortamda (web paneli ve entegrasyonlar üzerinden) sunulur. Erişim bilgileri e-posta ile iletilecektir. Süre, seçilen plana göre belirlenir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Ödeme</h2>
+<p class="mb-4">Fiyat, sitede ve ödeme ekranında belirtilen tutardır. Ödeme, kredi kartı veya yasal diğer yöntemlerle alınır. Tüm ödemeler 256-bit SSL ile güvence altındadır. Fatura, Alıcıya e-posta veya adrese gönderilir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Cayma Hakkı</h2>
+<p class="mb-4">Yönetmelik md. 15’e göre, hizmetin elektronik ortamda anında ifa edilmesi nedeniyle Alıcı, hizmeti kullanmaya başlamadan önce açık rızasıyla cayma hakkından vazgeçebilir. Cayma hakkından vazgeçiş, ödeme/onay ekranında onaylanır. İade koşulları “İptal ve İade Koşulları” sayfasında yer alır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">Uyuşmazlık</h2>
+<p class="mb-4">Tüketici hakem heyetleri ve tüketici mahkemeleri yetkilidir. Şikayet için: {{ company.email or "ŞİRKET_EMAIL" }}.</p>
+{% endblock %}

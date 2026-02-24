@@ -1,49 +1,232 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <title>Tuba Butik - Canlı Panel</title>
-    <style>
-        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; background: #f0f2f5; }
-        .sidebar { width: 300px; background: white; border-right: 1px solid #ccc; overflow-y: auto; }
-        .chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; }
-        .msg-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-        .item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
-        .item:hover { background: #f9f9f9; }
-        .msg { margin: 5px; padding: 10px; border-radius: 8px; max-width: 70%; }
-        .in { align-self: flex-start; background: white; }
-        .out { align-self: flex-end; background: #dcf8c6; }
-    </style>
-</head>
-<body>
-    <div class="sidebar" id="customers"></div>
-    <div class="chat">
-        <div class="msg-box" id="messages"></div>
+{% extends "base.html" %}
+{% block title %}{% if hat == 'satis' %}Satış Hattı{% elif hat == 'iade' %}Değişim/İade Hattı{% else %}Müşteriler{% endif %} – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="flex flex-col h-[calc(100vh-6rem)] -m-6" data-hat="{{ hat }}">
+    <div class="flex border-b border-gray-200 bg-white px-6 py-3 flex-shrink-0">
+        <h1 class="font-semibold text-gray-800">{{ current_user.company_name }} – {% if hat == 'satis' %}Satış Hattı{% elif hat == 'iade' %}Değişim/İade Hattı{% else %}Canlı Panel{% endif %}</h1>
+        <p class="ml-4 text-sm text-gray-500">Son 50 mesaj. Meta token geçerliyse hem bot hem panelden yanıt verebilirsiniz; mesajlar aynı numaradan gider.</p>
+        <button type="button" id="btnRefresh" class="ml-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">Yenile</button>
     </div>
+    <div class="flex flex-1 min-h-0">
+        <aside class="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 overflow-hidden">
+            <h2 class="px-4 py-3 text-sm font-medium text-gray-700 border-b border-gray-100">{% if hat == 'satis' %}Satış Hattı{% elif hat == 'iade' %}Değişim/İade Hattı{% else %}Müşteriler{% endif %}</h2>
+            <div id="customers" class="flex-1 overflow-y-auto"></div>
+        </aside>
+        <section class="flex-1 flex flex-col bg-[#e5ddd5] min-w-0">
+            <div id="handoffBanner" class="hidden flex-shrink-0 mx-4 mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                <strong>Manuel geçiş:</strong> Bot bu sohbeti yetkiliye yönlendirdi. Panelden yanıt verebilirsiniz; gönderdiğiniz mesaj müşteriye aynı numaradan gider.
+            </div>
+            <div id="messages" class="flex-1 p-5 overflow-y-auto flex flex-col gap-2">
+                <div id="emptyHint" class="text-gray-500 text-center py-12">Sol taraftan bir numara seçin.</div>
+            </div>
+            <div id="sendArea" class="hidden p-4 bg-white border-t border-gray-200 flex gap-2 items-center">
+                <div class="relative flex-1 flex gap-2 items-center">
+                    <input type="text" id="replyText" placeholder="Mesaj yazın... (Enter ile gönder)" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" autocomplete="off" />
+                    <button type="button" id="emojiBtn" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700" title="Emoji">😊</button>
+                    <div id="emojiPicker" class="hidden absolute bottom-full left-0 mb-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 flex flex-wrap gap-1 max-w-[200px]">
+                        <span class="emoji-insert cursor-pointer text-lg" data-emoji="😊">😊</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="👍">👍</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="❤️">❤️</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="🙏">🙏</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="✅">✅</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="📦">📦</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="💝">💝</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="👋">👋</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="😅">😅</span><span class="emoji-insert cursor-pointer text-lg" data-emoji="🎉">🎉</span>
+                    </div>
+                </div>
+                <button type="button" id="sendBtn" class="px-5 py-3 bg-[#25D366] text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">Gönder</button>
+            </div>
+        </section>
+    </div>
+</div>
 
-    <script>
-        async function fetchMessages() {
-            const res = await fetch('/api/customers');
-            const data = await res.json();
-            const list = document.getElementById('customers');
-            const box = document.getElementById('messages');
-            
-            list.innerHTML = "";
-            box.innerHTML = "";
-            
-            // Verileri ekrana basma mantığı
-            data.forEach(m => {
+<script>
+    let allMessages = [];
+    let selectedPhone = null;
+    let handoffPhones = [];
+
+    function getUniquePhones(messages) {
+        const set = new Set();
+        (messages || []).forEach(m => set.add(m.phone));
+        return Array.from(set);
+    }
+
+    function getLastMessageForPhone(phone) {
+        const msgs = allMessages.filter(m => m.phone === phone).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        return msgs[0];
+    }
+
+    function getMessagesForPhone(phone) {
+        return allMessages
+            .filter(m => m.phone === phone)
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }
+
+    function formatTime(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }
+    function formatDateTR(iso) {
+        if (!iso) return '';
+        return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    var currentHat = document.querySelector('[data-hat]') ? document.querySelector('[data-hat]').getAttribute('data-hat') : 'satis';
+
+    function renderCustomerList(phones) {
+        const list = document.getElementById('customers');
+        list.innerHTML = '';
+        if (phones.length === 0) {
+            list.innerHTML = '<div class="p-4 text-sm text-gray-400">Henüz mesaj yok.</div>';
+            return;
+        }
+        phones.forEach(phone => {
+            const last = getLastMessageForPhone(phone);
+            const isHandoff = handoffPhones.includes(phone);
+            const div = document.createElement('div');
+            div.className = 'item px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50' + (phone === selectedPhone ? ' bg-emerald-50' : '');
+            div.setAttribute('data-phone', phone);
+            div.innerHTML = '<span class="phone font-medium text-gray-800 block">' + escapeHtml(phone) +
+                (isHandoff ? ' <span class="inline-block ml-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Manuel geçiş</span>' : '') + '</span>' +
+                (last ? '<span class="preview text-xs text-gray-500 truncate block" title="' + escapeHtml(last.message_body || '') + '">' + escapeHtml((last.message_body || '').slice(0, 35)) + (last.message_body && last.message_body.length > 35 ? '…' : '') + '</span>' : '');
+            div.onclick = () => selectPhone(phone);
+            list.appendChild(div);
+        });
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    function selectPhone(phone) {
+        selectedPhone = phone;
+        document.querySelectorAll('#customers .item').forEach(el => {
+            el.classList.toggle('bg-emerald-50', el.getAttribute('data-phone') === phone);
+        });
+        const msgs = getMessagesForPhone(phone);
+        const box = document.getElementById('messages');
+        const emptyHint = document.getElementById('emptyHint');
+        const sendArea = document.getElementById('sendArea');
+        const handoffBanner = document.getElementById('handoffBanner');
+        emptyHint.classList.add('hidden');
+        sendArea.classList.remove('hidden');
+        sendArea.classList.add('flex');
+        if (handoffBanner) handoffBanner.classList.toggle('hidden', !handoffPhones.includes(phone));
+        box.innerHTML = '';
+        if (msgs.length === 0) {
+            box.innerHTML = '<div class="text-gray-500 text-center py-8">Bu numaraya ait mesaj bulunamadı.</div>';
+        } else {
+            msgs.forEach(m => {
                 const div = document.createElement('div');
-                div.className = `msg ${m.direction === 'inbound' ? 'in' : 'out'}`;
-                div.innerText = m.message_body;
+                const isOut = m.direction === 'outbound';
+                div.className = 'msg max-w-[80%] py-2 px-3 rounded-lg ' + (isOut ? 'ml-auto mr-0 bg-[#dcf8c6]' : 'ml-0 mr-auto bg-white');
+                div.innerHTML = '<span class="text-gray-800">' + escapeHtml(m.message_body || '') + '</span><div class="time text-xs text-gray-500 mt-1">' + formatTime(m.created_at) + '</div>';
                 box.appendChild(div);
-                
-                // Müşteri listesini güncelle (Basitçe)
-                list.innerHTML = `<div class="item">${m.phone}</div>`;
             });
         }
-        setInterval(fetchMessages, 3000); // 3 saniyede bir verileri tazele
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function fetchMessages() {
+        try {
+            const hat = document.querySelector('[data-hat]') ? document.querySelector('[data-hat]').getAttribute('data-hat') : 'satis';
+            const url = hat ? '/api/customers?hat=' + encodeURIComponent(hat) : '/api/customers';
+            const [msgRes, handoffRes] = await Promise.all([fetch(url), fetch('/api/handoffs')]);
+            const data = await msgRes.json();
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+            allMessages = Array.isArray(data) ? data : [];
+            try {
+                const h = await handoffRes.json();
+                handoffPhones = h.handoff_phones || [];
+            } catch (_) { handoffPhones = []; }
+            const phones = getUniquePhones(allMessages);
+            renderCustomerList(phones);
+            var banner = document.getElementById('handoffBanner');
+            if (selectedPhone && banner) banner.classList.toggle('hidden', !handoffPhones.includes(selectedPhone));
+            if (selectedPhone && phones.includes(selectedPhone)) {
+                const box = document.getElementById('messages');
+                const msgs = getMessagesForPhone(selectedPhone);
+                box.innerHTML = '';
+                msgs.forEach(m => {
+                    const div = document.createElement('div');
+                    const isOut = m.direction === 'outbound';
+                    div.className = 'msg max-w-[80%] py-2 px-3 rounded-lg ' + (isOut ? 'ml-auto mr-0 bg-[#dcf8c6]' : 'ml-0 mr-auto bg-white');
+                    div.innerHTML = '<span class="text-gray-800">' + escapeHtml(m.message_body || '') + '</span><div class="time text-xs text-gray-500 mt-1">' + formatTime(m.created_at) + '</div>';
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight;
+            }
+        } catch (e) {
+            console.error('Panel veri hatasi:', e);
+        }
+    }
+
+    document.getElementById('btnRefresh').onclick = function() {
         fetchMessages();
-    </script>
-</body>
-</html>
+    };
+
+    document.getElementById('sendBtn').onclick = async function() {
+        const text = document.getElementById('replyText').value?.trim();
+        if (!selectedPhone || !text) return;
+        const btn = this;
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: selectedPhone, text: text, hat: currentHat })
+            });
+            const result = await res.json();
+            if (result.status) {
+                document.getElementById('replyText').value = '';
+                allMessages.push({ phone: selectedPhone, message_body: text, direction: 'outbound', created_at: new Date().toISOString() });
+                const box = document.getElementById('messages');
+                const div = document.createElement('div');
+                div.className = 'msg max-w-[80%] py-2 px-3 rounded-lg ml-auto mr-0 bg-[#dcf8c6]';
+                div.innerHTML = '<span class="text-gray-800">' + escapeHtml(text) + '</span><div class="time text-xs text-gray-500 mt-1">' + formatTime(new Date().toISOString()) + '</div>';
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+                renderCustomerList(getUniquePhones(allMessages));
+            } else {
+                alert('Gönderilemedi: ' + (result.error || 'Bilinmeyen hata'));
+            }
+        } catch (e) {
+            alert('Gönderilemedi: ' + e.message);
+        }
+        btn.disabled = false;
+    };
+
+    document.getElementById('replyText').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('sendBtn').click();
+        }
+    });
+
+    document.getElementById('emojiBtn').addEventListener('click', function() {
+        const picker = document.getElementById('emojiPicker');
+        picker.classList.toggle('hidden');
+    });
+    document.getElementById('emojiPicker').querySelectorAll('.emoji-insert').forEach(function(el) {
+        el.addEventListener('click', function() {
+            const input = document.getElementById('replyText');
+            const emoji = this.getAttribute('data-emoji');
+            const start = input.selectionStart || 0;
+            const end = input.selectionEnd || 0;
+            const val = input.value || '';
+            input.value = val.slice(0, start) + emoji + val.slice(end);
+            input.selectionStart = input.selectionEnd = start + emoji.length;
+            input.focus();
+            document.getElementById('emojiPicker').classList.add('hidden');
+        });
+    });
+    document.addEventListener('click', function(e) {
+        const picker = document.getElementById('emojiPicker');
+        if (!picker.classList.contains('hidden') && !picker.contains(e.target) && !document.getElementById('emojiBtn').contains(e.target)) {
+            picker.classList.add('hidden');
+        }
+    });
+
+    setInterval(fetchMessages, 5000);
+    fetchMessages();
+</script>
+{% endblock %}

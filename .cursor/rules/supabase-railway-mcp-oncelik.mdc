@@ -1,0 +1,24 @@
+---
+description: Supabase ve Railway işlemlerinde MCP kullan; kullanıcıya manuel adım söyleme
+alwaysApply: true
+---
+
+# Supabase ve Railway: Önce MCP Kullan
+
+## Bağlantılar
+- Projede **Supabase MCP** ve **Railway MCP** tanımlı (`.cursor/mcp.json`).
+- Sunucu adları: **`supabase`**, **`railway`**.
+
+## Ne zaman uygula
+Kullanıcı şunları söylediğinde:
+- "Supabase'de migration çalıştır", "SQL çalıştır", "tablo ekle", "Supabase'de değişiklik yap"
+- "Railway'e deploy et", "canlıya al", "Railway'de değişken ekle", "loglara bak"
+
+## Yapılacak
+1. **Önce MCP kullan**: `call_mcp_tool` ile ilgili sunucuya (`supabase` veya `railway`) istek at.
+2. Araç şemasını bilmiyorsan yaygın isimleri dene (örn. Supabase: `execute_sql`, `run_sql`, `apply_migration`; Railway: `deploy`, `get_logs`). Hata alırsan mesajdaki tool listesine göre doğru tool name kullan.
+3. **Manuel adımı son çare yap**: "SQL'i kendin çalıştır" veya "Railway dashboard'dan deploy et" demeden önce MCP ile yapmayı dene.
+
+## Özet
+- Supabase / Railway işi istenince **önce MCP**, sonra gerekirse manuel talimat.
+- Kullanıcıyı "bunu hatırlatmaktan bıktım" diyecek duruma düşürme; MCP kullanımını varsayılan yap.

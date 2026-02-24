@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Yasal{% endblock %} – AI Satış</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="/" class="text-lg font-bold text-slate-900">AI Satış</a>
+            <a href="/" class="text-slate-600 hover:text-slate-900 text-sm font-medium">← Ana Sayfa</a>
+        </div>
+    </header>
+    <main class="max-w-3xl mx-auto px-6 py-10">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="border-t border-slate-200 bg-white mt-12">
+        <div class="max-w-3xl mx-auto px-6 py-6">
+            <div class="flex flex-wrap gap-4 text-sm text-slate-500 mb-4">
+                <a href="/legal/privacy" class="hover:text-slate-700">Gizlilik Politikası</a>
+                <a href="/legal/terms" class="hover:text-slate-700">Kullanım Koşulları</a>
+                <a href="/legal/sales-agreement" class="hover:text-slate-700">Mesafeli Satış Sözleşmesi</a>
+                <a href="/legal/cancellation" class="hover:text-slate-700">İptal ve İade</a>
+                <a href="/legal/about" class="hover:text-slate-700">Hakkımızda</a>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">Tüm ödemeler 256-bit SSL ile korunmaktadır.</p>
+            <div class="flex items-center gap-3 text-slate-400">
+                <span class="text-xs">Güvenli ödeme:</span>
+                <svg class="h-6 w-8" viewBox="0 0 40 24" fill="none" aria-label="Mastercard"><rect width="40" height="24" rx="4" fill="#EB001B"/><rect x="16" width="24" height="24" rx="4" fill="#F79E1B"/><path d="M24 16.5a6 6 0 110-9 6 6 0 010 9z" fill="#FF5F00"/></svg>
+                <span class="text-xs font-medium text-slate-500">Iyzico</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

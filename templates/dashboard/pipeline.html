@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Satış Panosu – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="max-w-[1600px] mx-auto">
+    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Akıllı Satış Hunisi</h1>
+    <p class="text-slate-500 text-sm mb-6">Müşterileri aşamaya göre görün. Sürükleyip bırakarak güncelleyebilir veya AI otomatik taşır.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <!-- YENİ ADAY -->
+        <div class="pipeline-column bg-slate-100/80 rounded-xl border border-slate-200 min-h-[320px] flex flex-col" data-status="new">
+            <div class="p-3 border-b border-slate-200 bg-slate-200/60 rounded-t-xl">
+                <h2 class="font-semibold text-slate-700 flex items-center gap-2">
+                    <span aria-hidden="true">📥</span>
+                    <span>YENİ ADAY</span>
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">İlk Mesaj</p>
+            </div>
+            <div class="pipeline-cards flex-1 p-2 space-y-2 overflow-y-auto" data-status="new">
+                {% for c in customers_by_status.get('new', []) %}
+                {% include "dashboard/_pipeline_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- İLGİLENİYOR -->
+        <div class="pipeline-column bg-blue-50/80 rounded-xl border border-blue-200 min-h-[320px] flex flex-col" data-status="interested">
+            <div class="p-3 border-b border-blue-200 bg-blue-100/80 rounded-t-xl">
+                <h2 class="font-semibold text-blue-800 flex items-center gap-2">
+                    <span aria-hidden="true">🤔</span>
+                    <span>İLGİLENİYOR</span>
+                </h2>
+                <p class="text-xs text-blue-600 mt-0.5">Fiyat / Ürün Sordu</p>
+            </div>
+            <div class="pipeline-cards flex-1 p-2 space-y-2 overflow-y-auto" data-status="interested">
+                {% for c in customers_by_status.get('interested', []) %}
+                {% include "dashboard/_pipeline_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SICAK TEMAS -->
+        <div class="pipeline-column bg-amber-50/80 rounded-xl border border-amber-200 min-h-[320px] flex flex-col" data-status="negotiation">
+            <div class="p-3 border-b border-amber-200 bg-amber-100/80 rounded-t-xl">
+                <h2 class="font-semibold text-amber-800 flex items-center gap-2">
+                    <span aria-hidden="true">🔥</span>
+                    <span>SICAK TEMAS</span>
+                </h2>
+                <p class="text-xs text-amber-700 mt-0.5">Pazarlık / Karar</p>
+            </div>
+            <div class="pipeline-cards flex-1 p-2 space-y-2 overflow-y-auto" data-status="negotiation">
+                {% for c in customers_by_status.get('negotiation', []) %}
+                {% include "dashboard/_pipeline_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SATIŞ KAPANDI -->
+        <div class="pipeline-column bg-emerald-50/80 rounded-xl border border-emerald-200 min-h-[320px] flex flex-col" data-status="won">
+            <div class="p-3 border-b border-emerald-200 bg-emerald-100/80 rounded-t-xl">
+                <h2 class="font-semibold text-emerald-800 flex items-center gap-2">
+                    <span aria-hidden="true">✅</span>
+                    <span>SATIŞ KAPANDI</span>
+                </h2>
+                <p class="text-xs text-emerald-700 mt-0.5">Sipariş</p>
+            </div>
+            <div class="pipeline-cards flex-1 p-2 space-y-2 overflow-y-auto" data-status="won">
+                {% for c in customers_by_status.get('won', []) %}
+                {% include "dashboard/_pipeline_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- İADE TALEBİ -->
+        <div class="pipeline-column bg-rose-50/80 rounded-xl border border-rose-200 min-h-[320px] flex flex-col" data-status="return">
+            <div class="p-3 border-b border-rose-200 bg-rose-100/80 rounded-t-xl">
+                <h2 class="font-semibold text-rose-800 flex items-center gap-2">
+                    <span aria-hidden="true">🔄</span>
+                    <span>İADE TALEBİ</span>
+                </h2>
+                <p class="text-xs text-rose-700 mt-0.5">Değişim / İade</p>
+            </div>
+            <div class="pipeline-cards flex-1 p-2 space-y-2 overflow-y-auto" data-status="return">
+                {% for c in customers_by_status.get('return', []) %}
+                {% include "dashboard/_pipeline_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var cards = document.querySelectorAll('.pipeline-card');
+    var dropZones = document.querySelectorAll('.pipeline-cards');
+
+    cards.forEach(function(card) {
+        card.setAttribute('draggable', 'true');
+        card.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', card.getAttribute('data-customer-id'));
+            e.dataTransfer.effectAllowed = 'move';
+            card.classList.add('opacity-50');
+        });
+        card.addEventListener('dragend', function() {
+            card.classList.remove('opacity-50');
+        });
+    });
+
+    dropZones.forEach(function(zone) {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            zone.classList.add('ring-2', 'ring-blue-400', 'ring-inset');
+        });
+        zone.addEventListener('dragleave', function() {
+            zone.classList.remove('ring-2', 'ring-blue-400', 'ring-inset');
+        });
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            zone.classList.remove('ring-2', 'ring-blue-400', 'ring-inset');
+            var customerId = e.dataTransfer.getData('text/plain');
+            var newStatus = zone.getAttribute('data-status');
+            if (!customerId || !newStatus) return;
+
+            fetch('/api/update-customer-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ customer_id: parseInt(customerId, 10), status: newStatus })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                window.location.reload();
+            })
+            .catch(function() { alert('Güncelleme yapılamadı.'); });
+        });
+    });
+})();
+</script>
+{% endblock %}

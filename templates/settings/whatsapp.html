@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}WhatsApp Bağlantı Ayarları – {{ current_user.company_name }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">WhatsApp Bağlantı Ayarları</h1>
+    <p class="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm mb-8">
+        ⚠️ Normal WhatsApp uygulamanız bu numara için devre dışı kalacaktır. Mesajlar yalnızca panel ve bot üzerinden yönetilir.
+    </p>
+
+    <p class="text-slate-600 text-sm mb-6">Satış ve Değişim hatları için bot modu (Canlı / Dinle+Analiz / Kapat) <strong>Genel Bakış</strong> sayfasındaki kartlardan yönetilir. Dinle+Analiz seçiliyken gelen mesajlar otomatik analiz edilip veritabanına yazılır; ekstra kaydetme gerekmez.</p>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <!-- SEÇENEK 1: VIP KURULUM -->
+        <div class="rounded-2xl border-2 border-blue-500 bg-white shadow-lg p-6 flex flex-col">
+            <div class="text-4xl mb-3" aria-hidden="true">🧑‍🔧</div>
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Anahtar Teslim Kurulum</h2>
+            <p class="text-slate-600 text-sm mb-6 flex-1">Teknik detaylarla uğraşmayın. Uzmanlarımız sizin için 15 dakikada kursun.</p>
+            <a href="{{ vip_whatsapp_link or 'https://wa.me/905551234567?text=WhatsApp%20kurulum%20randevusu%20istemek%20istiyorum' }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-5 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-sm">
+                Randevu Al & Destek İste
+            </a>
+        </div>
+
+        <!-- SEÇENEK 2: MANUEL KURULUM -->
+        <div class="rounded-2xl border border-slate-200 bg-white shadow card-hover p-6 flex flex-col">
+            <div class="text-4xl mb-3" aria-hidden="true">⚙️</div>
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Kendim Kurmak İstiyorum</h2>
+            <p class="text-slate-600 text-sm mb-4 flex-1">Meta Business hesabınız varsa bilgileri girerek hemen bağlayın.</p>
+
+            <details class="group/details mt-2">
+                <summary class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 list-none flex items-center gap-2">
+                    <span class="group-open/details:rotate-90 transition inline-block">▶</span>
+                    Bilgileri gir ve bağlan
+                </summary>
+                <form id="whatsappForm" class="mt-4 pt-4 border-t border-slate-100 space-y-4">
+                    <div>
+                        <label for="phone_number_id" class="block text-sm font-medium text-slate-700 mb-1">📱 Telefon Numarası ID (Phone Number ID)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="phone_number_id" name="phone_number_id" placeholder="Örn: 123456789012345" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
+                            <span class="relative group/tip">
+                                <button type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 text-sm" aria-label="Nerede bulunur?" title="Meta: WhatsApp > API Kurulum > Telefon numarası yanındaki ID">❓</button>
+                                <span class="absolute left-full top-0 ml-1 w-56 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible z-10">Meta Panelinde Nerede? → WhatsApp > API Kurulum > Telefon numarası yanındaki ID.</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="waba_id" class="block text-sm font-medium text-slate-700 mb-1">💼 İşletme Hesabı ID (WABA ID)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="waba_id" name="waba_id" placeholder="Örn: 987654321098765" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
+                            <span class="relative group/tip">
+                                <button type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 text-sm" aria-label="Nerede bulunur?" title="Meta: business.facebook.com > Hesap Ayarları > Hesap ID">❓</button>
+                                <span class="absolute left-full top-0 ml-1 w-56 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible z-10">Meta Panelinde Nerede? → business.facebook.com > Hesap Ayarları > Hesap ID.</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="access_token" class="block text-sm font-medium text-slate-700 mb-1">🔑 Kalıcı Erişim Jetonu (Permanent Token)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="password" id="access_token" name="access_token" placeholder="Kalıcı token (EAA...)" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" autocomplete="off" />
+                            <span class="relative group/tip">
+                                <button type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 text-sm" aria-label="Nerede bulunur?" title="Meta: Geliştiriciler > Sistem Kullanıcı tokenı > whatsapp_business_messaging">❓</button>
+                                <span class="absolute left-full top-0 ml-1 w-56 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible z-10">Meta Panelinde Nerede? → Geliştiriciler > Sistem Kullanıcı tokenı oluştur > whatsapp_business_messaging izni.</span>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-slate-500 text-xs mt-2">Yukarıdaki alanlar <strong>Satış hattı</strong> numaranızdır. Aşağıda isteğe bağlı olarak <strong>Değişim/İade hattı</strong> için ayrı bir numara tanımlayabilirsiniz; tanımlarsanız o numaraya gelen mesajlar panelde "Değişim/İade Hattı"nda görünür ve model değişim odaklı yanıt verir.</p>
+                    <div class="pt-4 mt-4 border-t border-slate-200">
+                        <h3 class="text-sm font-semibold text-slate-700 mb-2">📦 Değişim/İade hattı (opsiyonel)</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="phone_number_id_exchange" class="block text-xs font-medium text-slate-600 mb-1">Değişim hattı Telefon Numarası ID</label>
+                                <input type="text" id="phone_number_id_exchange" name="phone_number_id_exchange" placeholder="Boş bırakırsanız sadece satış hattı kullanılır" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+                            </div>
+                            <div>
+                                <label for="access_token_exchange" class="block text-xs font-medium text-slate-600 mb-1">Değişim hattı Erişim Jetonu</label>
+                                <input type="password" id="access_token_exchange" name="access_token_exchange" placeholder="Aynı Meta hesabında farklı numara için token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" autocomplete="off" />
+                            </div>
+                        </div>
+                    </div>
+                    <div id="formMessage" class="hidden text-sm rounded-lg p-3"></div>
+                    <button type="submit" id="btnSave" class="w-full inline-flex items-center justify-center px-4 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition disabled:opacity-50">
+                        Bağlantıyı Test Et ve Kaydet
+                    </button>
+                </form>
+            </details>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var form = document.getElementById('whatsappForm');
+    var btn = document.getElementById('btnSave');
+    var msg = document.getElementById('formMessage');
+    if (!form || !btn) return;
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var phoneId = document.getElementById('phone_number_id').value.trim();
+        var wabaId = document.getElementById('waba_id').value.trim();
+        var token = document.getElementById('access_token').value.trim();
+        var phoneIdEx = document.getElementById('phone_number_id_exchange') && document.getElementById('phone_number_id_exchange').value.trim();
+        var tokenEx = document.getElementById('access_token_exchange') && document.getElementById('access_token_exchange').value.trim();
+        if (!phoneId || !token) {
+            showMsg('Lütfen en az Telefon Numarası ID ve Erişim Jetonu alanlarını doldurun.', false);
+            return;
+        }
+        btn.disabled = true;
+        msg.classList.add('hidden');
+        var payload = { phone_number_id: phoneId, waba_id: wabaId || null, access_token: token };
+        if (document.getElementById('phone_number_id_exchange')) payload.phone_number_id_exchange = phoneIdEx || '';
+        if (document.getElementById('access_token_exchange')) payload.access_token_exchange = tokenEx || '';
+        try {
+            var res = await fetch('/api/save-whatsapp-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            var data = await res.json().catch(function() { return {}; });
+            if (res.ok && data.success) {
+                showMsg('✅ ' + (data.message || 'Bağlantı doğrulandı ve kaydedildi.'), true);
+            } else {
+                showMsg('❌ ' + (data.error || data.message || 'Kayıt veya doğrulama başarısız.'), false);
+            }
+        } catch (err) {
+            showMsg('❌ İstek gönderilemedi: ' + err.message, false);
+        }
+        btn.disabled = false;
+    });
+
+    function showMsg(text, isSuccess) {
+        msg.textContent = text;
+        msg.classList.remove('hidden');
+        msg.className = 'text-sm rounded-lg p-3 ' + (isSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200');
+    }
+
+    // Pre-fill from server if provided
+    {% if whatsapp_settings %}
+    document.getElementById('phone_number_id').value = {{ (whatsapp_settings.phone_number_id or '')|tojson }};
+    document.getElementById('waba_id').value = {{ (whatsapp_settings.waba_id or '')|tojson }};
+    if (document.getElementById('phone_number_id_exchange')) document.getElementById('phone_number_id_exchange').value = {{ (whatsapp_settings.phone_number_id_exchange or '')|tojson }};
+    {% endif %}
+})();
+</script>
+{% endblock %}

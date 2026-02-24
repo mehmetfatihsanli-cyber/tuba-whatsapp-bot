@@ -33,7 +33,16 @@ def main():
         
         for urun in urunler:
             try:
-                pinecone.urun_ekle(urun)
+                pinecone.urun_ekle(
+                    urun_id=urun.get("id", ""),
+                    isim=urun.get("isim", ""),
+                    aciklama=urun.get("aciklama", ""),
+                    fiyat=float(urun.get("fiyat", 0)),
+                    stok=int(urun.get("stok", 0)),
+                    gorsel=urun.get("gorsel", ""),
+                    varyantlar=urun.get("varyantlar", ""),
+                    product_url=urun.get("product_url") or None,
+                )
                 basarili += 1
                 logger.info(f"✅ Eklendi: {urun.get('isim', 'Bilinmeyen')}")
             except Exception as e:

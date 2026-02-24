@@ -1,0 +1,26 @@
+{% extends "legal/base_legal.html" %}
+{% block title %}Gizlilik Politikası & KVKK{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Gizlilik Politikası ve KVKK Aydınlatma Metni</h1>
+<p class="text-slate-600 mb-4">Son güncelleme: {{ company.updated_date or "2026" }}</p>
+
+<p class="mb-4">Bu metin, <strong>{{ company.legal_name or "ŞİRKET_ADI" }}</strong> (“Şirket”) tarafından sunulan SaaS yazılım hizmeti kapsamında kişisel verilerinizin işlenmesine ilişkin 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca hazırlanmıştır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">1. Veri Sorumlusu</h2>
+<p class="mb-4">Veri sorumlusu: <strong>{{ company.legal_name or "ŞİRKET_ADI" }}</strong>, adres: {{ company.address or "ADRES" }}, vergi no: {{ company.tax_number or "VERGİ_NO" }}.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">2. İşlenen Kişisel Veriler</h2>
+<p class="mb-4">Hizmet kapsamında işlenebilecek veriler: ad soyad, e-posta, telefon numarası, fatura/adres bilgileri, oturum ve kullanım logları (IP, cihaz bilgisi, işlem zamanları). Ödeme bilgileri ödeme hizmeti sağlayıcısı (Iyzico/PayTR) üzerinden işlenir; kredi kartı numarası sistemimizde saklanmaz.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">3. İşleme Amaçları ve Hukuki Sebepler</h2>
+<p class="mb-4">Verileriniz; abonelik ve sözleşmenin ifası, fatura düzenleme, destek hizmeti, güvenlik ve yasal yükümlülüklerin yerine getirilmesi amacıyla, KVKK md. 5 uyarınca sözleşmenin ifası, hukuki yükümlülük ve meşru menfaat kapsamında işlenir.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">4. Aktarım</h2>
+<p class="mb-4">Verileriniz, hizmet sağlayıcılar (hosting, ödeme kuruluşu, e-posta) ve yasal zorunluluklar çerçevesinde yetkili kurumlarla paylaşılabilir. Yurt dışı aktarımda gerekli önlemler alınır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">5. Haklarınız</h2>
+<p class="mb-4">KVKK md. 11 uyarınca erişim, düzeltme, silme, işlemenin kısıtlanması, itiraz ve taşınabilirlik taleplerinizi {{ company.email or "ŞİRKET_EMAIL" }} adresine iletebilirsiniz. Başvurular en geç 30 gün içinde yanıtlanır.</p>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-6 mb-2">6. Saklama Süresi</h2>
+<p class="mb-4">Verileriniz, hizmet süresi ve yasal saklama süreleri boyunca muhafaza edilir; süre sonunda anonimleştirilir veya silinir.</p>
+{% endblock %}

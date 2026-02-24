@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Anthropic Claude API
+# Varsayilan: Claude 3.5 Sonnet (en son, akilli model). Degistirmek icin AI_MODEL env kullan.
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', 'sk-ant-test')
-AI_MODEL = os.getenv('AI_MODEL', 'claude-3-5-sonnet-latest')
+AI_MODEL = os.getenv('AI_MODEL', 'claude-sonnet-4-5')
 
 # Supabase - GEÇERLİ FORMAT (geçici)
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://test.supabase.co')

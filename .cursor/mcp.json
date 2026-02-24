@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "supabase": { "url": "https://mcp.supabase.com/mcp" },
+    "railway": { "command": "npx", "args": ["-y", "@railway/mcp-server"] },
+    "replicate": { "command": "npx", "args": ["-y", "mcp-remote@latest", "https://mcp.replicate.com/sse"] },
+    "n8n": {
+      "command": "npx",
+      "args": ["-y", "@makafeli/n8n-workflow-builder"],
+      "env": {
+        "N8N_HOST": "https://herzamanki.app.n8n.cloud",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyYThmMWVjMy1mYTYyLTQyNjEtYTgxOS01NTkwNTBhNjQyOTEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiYjM3ZjE1ODktMzE5OC00YjVhLWFmZWEtZDBiMjU4MzQzYmZlIiwiaWF0IjoxNzcxNDg2NDExLCJleHAiOjE3NzkyMjQ0MDB9.dhMX0cWAiw6WetgUsj6ogAjhdQJHyYFU9_a8K5qmJqw"
+      }
+    }
+  }
+}

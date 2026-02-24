@@ -1,7 +1,10 @@
 # ButikSistem RESTful WebService V1.1.14
 
+**Resmi dokümantasyon (Postman):** https://documenter.getpostman.com/view/7476028/TVYGde1H
+
 Kaynak: Gelistir Information Techs.  
-Base URL (test): `https://test.butiksistem.com/rest/`
+Base URL (test): `https://test.butiksistem.com/rest/`  
+Canlı (Tuba): `BUTIK_API_URL` ile (örn. `https://tm2.butiksistem.com/rest/`). Giriş: `BUTIK_API_USER`, `BUTIK_API_PASS`.
 
 Tüm isteklerde gövde örneği:
 ```json
@@ -36,9 +39,10 @@ Tüm isteklerde gövde örneği:
 - Cevap: `batchRequestId` (asenkron işlem)
 
 ### ProductGet
-- **POST** `https://test.butiksistem.com/rest/product/get`
-- Parametreler: `ids`, `status`, `typeId`, `colorId`, `brandId`, `modelCode`, `colorCode`, `responseType` ("json"|"xml")
-- Cevap: `total`, `data` (ürün listesi; her ürün: id, name, modelCode, price, variants, vb.)
+- **POST** `{BUTIK_API_URL}product/get`
+- **Gövde:** `{ "auth": { "userName": "...", "password": "..." }, "arguments": { ... } }`
+- **Parametreler (arguments; hepsi opsiyonel filtre):** `ids`, `status` (1=aktif), `typeId`, `colorId`, `brandId`, `modelCode`, `modelCodes` (dizi), `productCode`, `colorCode`, `responseType` ("json"|"xml"). **Ürün kodu eşleşmesi:** Sitedeki "Ürün Kodu" (örn. 2209-t1) Butik'te **ayrı iki alan**: `modelCode` (2209) ve `colorCode` (t1). Tek parametreyle "2209-t1" gönderirsen `recordNotFound` dönebilir; `arguments: { "modelCode": "2209", "colorCode": "t1" }` ile ara. Parametre yoksa veya sadece `status: 1` ile tüm aktif ürünler istenebilir (XML alternatifi).
+- **Cevap:** `{ "status": true, "result": { "total": N, "data": [ { "id", "name", "modelCode", "salePrice"/"price", "variants"/"variantsList", "quantity"/"stock"/"totalQuantity", ... } ] } }`
 
 ### ProductUpdate
 - **POST** `https://test.butiksistem.com/rest/product/update`
