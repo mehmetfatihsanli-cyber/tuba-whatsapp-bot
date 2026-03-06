@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import base64
 import anthropic
 from modules.tuba_rules import TubaButikKurallari
 import config
@@ -124,6 +125,46 @@ class TubaAIAssistant:
                 logger.warning(f"Prompt dosyası okunamadı ({path}): {e}")
         logger.warning("prompts/tuba_system.txt bulunamadı; varsayılan prompt kullanılıyor.")
         return """Sen Tuba Butik'in satış asistanısın. Samimi ve profesyonel ol. İade 14 gün, değişim max 2. Gereksiz yere yetkiliye yönlendirme; sadece gerçekten kızgınlık/küfür/yetkili talebi varsa yönlendir."""
+
+    def _load_system_prompt_for_line(self, tenant_id=None, line=None):
+        """Satış/değişim hattına göre ayrı prompt dosyası yükle: tuba_satis.txt (sales), tuba_degisim.txt (exchange). Yoksa tek prompt + kısa ek."""
+        if line == "sales":
+            paths = []
+            if tenant_id:
+                paths.append(f"prompts/{tenant_id}_satis.txt")
+            paths.extend(('prompts/tuba_satis.txt', 'tuba_satis.txt'))
+            for path in paths:
+                try:
+                    if os.path.isfile(path):
+                        with open(path, 'r', encoding='utf-8') as f:
+                            content = f.read().strip()
+                            if content:
+                                logger.info(f"✅ Satış hattı prompt yüklendi: {path}")
+                                return content
+                except Exception as e:
+                    logger.warning(f"Prompt okunamadı ({path}): {e}")
+        elif line == "exchange":
+            paths = []
+            if tenant_id:
+                paths.append(f"prompts/{tenant_id}_degisim.txt")
+            paths.extend(('prompts/tuba_degisim.txt', 'tuba_degisim.txt'))
+            for path in paths:
+                try:
+                    if os.path.isfile(path):
+                        with open(path, 'r', encoding='utf-8') as f:
+                            content = f.read().strip()
+                            if content:
+                                logger.info(f"✅ Değişim hattı prompt yüklendi: {path}")
+                                return content
+                except Exception as e:
+                    logger.warning(f"Prompt okunamadı ({path}): {e}")
+        # Fallback: tek prompt + hattı belirten kısa ek (mevcut davranış)
+        base = self._load_system_prompt(tenant_id)
+        if line == "exchange":
+            return "ÖNEMLİ: Şu an DEĞİŞİM/İADE HATTındasın. Yanıtların iade, değişim, sipariş takibi ve kargo odaklı olsun; satış teklifi yapma.\n\n" + base
+        if line == "sales":
+            return "ÖNEMLİ: Şu an SATIŞ HATTındasın. Yanıtların satış, sipariş, ürün ve fiyat odaklı olsun.\n\n" + base
+        return base
 
     def _load_test_orders(self):
         """Test siparişlerini yükle"""
@@ -272,14 +313,12 @@ class TubaAIAssistant:
         "(3) Son analiz özeti sadece bilgi/bağlam; müşteri eğilimlerine uyum sağla ama kuralları gevşetme.\n\n"
     )
 
-    def mesaj_olustur(self, musteri_mesaji, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None, tenant_id=None, tenant_extra_instruction=None, line=None, analysis_summary_for_prompt=None):
-        """tenant_id ile base prompt; line=sales|exchange ile satış/değişim hattı davranışı; tenant_extra_instruction panelden; analysis_summary_for_prompt Dinle+Analiz özeti (sadece bu hat). Döner: (cevap_metni, analysis_dict|None)."""
-        system_prompt_override = self._load_system_prompt(tenant_id) if tenant_id else None
-        if system_prompt_override:
-            if line == "exchange":
-                system_prompt_override = "ÖNEMLİ: Şu an DEĞİŞİM/İADE HATTındasın. Yanıtların iade, değişim, sipariş takibi ve kargo odaklı olsun; satış teklifi yapma.\n\n" + system_prompt_override
-            elif line == "sales":
-                system_prompt_override = "ÖNEMLİ: Şu an SATIŞ HATTındasın. Yanıtların satış, sipariş, ürün ve fiyat odaklı olsun.\n\n" + system_prompt_override
+    def mesaj_olustur(self, musteri_mesaji, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None, tenant_id=None, tenant_extra_instruction=None, line=None, analysis_summary_for_prompt=None, image_data=None):
+        """tenant_id + line ile satış/değişim prompt (tuba_satis.txt / tuba_degisim.txt); image_data varsa çoklu modal (görsel analizi). Döner: (cevap_metni, analysis_dict|None)."""
+        if line in ("sales", "exchange"):
+            system_prompt_override = self._load_system_prompt_for_line(tenant_id, line)
+        else:
+            system_prompt_override = self._load_system_prompt(tenant_id) if tenant_id else None
         has_extra = bool((tenant_extra_instruction or "").strip())
         has_analysis = bool((analysis_summary_for_prompt or "").strip())
         if system_prompt_override and (has_extra or has_analysis):
@@ -294,11 +333,11 @@ class TubaAIAssistant:
                 system_prompt_override = system_prompt_override + "\n\n--- Son analiz özeti (Dinle+Analiz, bu hat) ---\n" + summary
         tur = self.basit_mi_karmaşik_mi(musteri_mesaji)
         logger.info(f"[AI] mesaj türü={tur} | tenant={tenant_id or 'default'} | line={line} | metin={musteri_mesaji[:60]}...")
-        if tur == "basit":
+        if tur == "basit" and not image_data:
             cevap = self.basit_cevap(musteri_mesaji, system_prompt_override=system_prompt_override)
             logger.info("[AI] Cevap: basit (sabit) veya karmaşık'a gonderildi")
             return (cevap, None)
-        return self.karmaşık_cevap(musteri_mesaji, musteri_telefon, gecmis_konusma, siparis_bilgisi, system_prompt_override=system_prompt_override)
+        return self.karmaşık_cevap(musteri_mesaji, musteri_telefon, gecmis_konusma, siparis_bilgisi, system_prompt_override=system_prompt_override, image_data=image_data)
     
     def basit_cevap(self, mesaj, system_prompt_override=None):
         t = self._turkce_arama_metni(mesaj)
@@ -321,12 +360,13 @@ class TubaAIAssistant:
         else:
             return self.karmaşık_cevap(mesaj, system_prompt_override=system_prompt_override)
 
-    def karmaşık_cevap(self, mesaj, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None, system_prompt_override=None):
-        # İade/değişim: sipariş kodu sor, numaradan sipariş varsa listele (Butik veya test)
-        iade_cevap = self._iade_degisim_ilk_cevap(mesaj, musteri_telefon)
-        if iade_cevap:
-            logger.info("[AI] Cevap: iade/değişim sabit (Claude cagrilmadi)")
-            return (iade_cevap, {"intent": "return_request", "sentiment": None, "urgency": None})
+    def karmaşık_cevap(self, mesaj, musteri_telefon=None, gecmis_konusma=None, siparis_bilgisi=None, system_prompt_override=None, image_data=None):
+        # İade/değişim (sadece metin): sipariş kodu sor, numaradan sipariş varsa listele
+        if not image_data:
+            iade_cevap = self._iade_degisim_ilk_cevap(mesaj, musteri_telefon)
+            if iade_cevap:
+                logger.info("[AI] Cevap: iade/değişim sabit (Claude cagrilmadi)")
+                return (iade_cevap, {"intent": "return_request", "sentiment": None, "urgency": None})
 
         api_key = self.claude_api_key
         if not api_key or api_key == "sk-ant-test":
@@ -340,25 +380,45 @@ class TubaAIAssistant:
 
         system_prompt = system_prompt_override if system_prompt_override else self.sistem_prompt
         try:
-            client = anthropic.Anthropic(api_key=api_key, timeout=25.0)
+            client = anthropic.Anthropic(api_key=api_key, timeout=60.0)
             urunler_metni = self._satis_urun_context(mesaj)
             context = self._context_olustur(gecmis_konusma, siparis_bilgisi, urunler_metni)
-            use_haiku = os.getenv("AI_USE_HAIKU_FOR_SIMPLE", "").strip().lower() in ("1", "true", "yes")
-            is_simple = len((mesaj or "").strip()) < 100 and not self.musteri_kizgin_mi(mesaj)
-            if use_haiku and is_simple:
-                model = os.getenv("AI_HAIKU_MODEL", "claude-haiku-4-5")
-                logger.info("[AI] Claude Haiku (basit mesaj) cagriliyor...")
-            else:
+            # Görsel varsa çoklu modal: önce görsel, sonra metin (satış/değişim her ikisinde de)
+            text_part = f"{STRUCTURED_OUTPUT_INSTRUCTION}\n\nCONTEXT:\n{context}\n\nMÜŞTERİ MESAJI:\n{mesaj or '(Müşteri görsel paylaştı; görseli inceleyip ne istediğini anlayıp uygun cevabı ver.)'}"
+            if image_data:
+                logger.info("[AI] Görsel analizi ile Claude cagriliyor (çoklu modal).")
+                media_type = "image/jpeg"
+                if isinstance(image_data, bytes) and image_data[:8] == b"\x89PNG\r\n\x1a\n":
+                    media_type = "image/png"
+                image_b64 = base64.b64encode(image_data).decode("utf-8") if isinstance(image_data, bytes) else image_data
+                user_content = [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
+                    {"type": "text", "text": text_part}
+                ]
                 model = getattr(config, "AI_MODEL", None) or os.getenv("AI_MODEL", "claude-sonnet-4-5")
-                logger.info("[AI] Claude Sonnet cagriliyor (duygusal zeka + cevap).")
-            user_content = f"{STRUCTURED_OUTPUT_INSTRUCTION}\n\nCONTEXT:\n{context}\n\nMÜŞTERİ MESAJI:\n{mesaj}"
-            response = client.messages.create(
-                model=model,
-                max_tokens=512,
-                temperature=0.5,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_content}]
-            )
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=1024,
+                    temperature=0.5,
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": user_content}]
+                )
+            else:
+                use_haiku = os.getenv("AI_USE_HAIKU_FOR_SIMPLE", "").strip().lower() in ("1", "true", "yes")
+                is_simple = len((mesaj or "").strip()) < 100 and not self.musteri_kizgin_mi(mesaj)
+                if use_haiku and is_simple:
+                    model = os.getenv("AI_HAIKU_MODEL", "claude-haiku-4-5")
+                    logger.info("[AI] Claude Haiku (basit mesaj) cagriliyor...")
+                else:
+                    model = getattr(config, "AI_MODEL", None) or os.getenv("AI_MODEL", "claude-sonnet-4-5")
+                    logger.info("[AI] Claude Sonnet cagriliyor (duygusal zeka + cevap).")
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=512,
+                    temperature=0.5,
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": text_part}]
+                )
             raw = response.content[0].text
             reply, analysis = _parse_structured_response(raw)
             if analysis:

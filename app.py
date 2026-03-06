@@ -1630,7 +1630,20 @@ def webhook_receive():
         
         message = value['messages'][0]
         sender_phone = message['from']
-        msg_body = message['text']['body'] if 'text' in message else "Medya/Diger"
+        # Metin veya görsel: görselde caption varsa metin, yoksa varsayılan (görsel analizi için)
+        image_bytes = None
+        if 'text' in message:
+            msg_body = message['text']['body']
+        elif 'image' in message:
+            msg_body = "Medya/Diger"
+            cap = message.get('caption')
+            if isinstance(cap, dict) and (cap.get('text') or cap.get('body')):
+                msg_body = (cap.get('text') or cap.get('body') or "").strip()
+            elif isinstance(cap, str) and cap.strip():
+                msg_body = cap.strip()
+        else:
+            msg_body = "Medya/Diger"
+
         metadata = value.get('metadata', {})
         phone_number_id = metadata.get('phone_number_id') or PHONE_ID
         tenant_id, line = phone_id_to_tenant_and_line(phone_number_id)
@@ -1638,6 +1651,17 @@ def webhook_receive():
         if line == "sales" and not tenant_has_exchange_number(tenant_id) and message_looks_like_exchange(msg_body):
             line = "exchange"
             logger.info(f"📩 [Tek numara test] Mesaj iade/değişim gibi → line=exchange (tenant={tenant_id})")
+
+        # Görsel indir (satış/değişim her ikisinde de çoklu modal; müşteri ekran görüntüsü atarak ürün sorabiliyor)
+        if 'image' in message:
+            media_id = (message.get('image') or {}).get('id')
+            if media_id:
+                token = _get_whatsapp_token_for_tenant_line(tenant_id, line)
+                image_bytes = _download_whatsapp_media(media_id, token)
+                if image_bytes:
+                    if not (msg_body and msg_body != "Medya/Diger"):
+                        msg_body = "Müşteri bir görsel paylaştı. Görseli inceleyip ne istediğini anlayıp uygun cevabı ver."
+                    logger.info(f"📷 Görsel indirildi ({len(image_bytes)} byte), AI görsel analizi yapacak (hat={line})")
 
         logger.info(f"📩 Mesaj Geldi: {sender_phone} - {msg_body} (tenant={tenant_id} hat={line})")
 
@@ -1933,6 +1957,7 @@ def webhook_receive():
                 tenant_extra_instruction=extra_instruction,
                 line=line,
                 analysis_summary_for_prompt=analysis_summary,
+                image_data=image_bytes,
             )
             if isinstance(result, tuple):
                 cevap, analysis = result[0], result[1]
@@ -2104,6 +2129,43 @@ def get_gecmis_konusma(phone, tenant_id="tuba", limit=12, company_name=None, lin
         logger.warning(f"Gecmis konusma alinamadi: {e}")
         return None
 
+
+def _get_whatsapp_token_for_tenant_line(tenant_id, line):
+    """Tenant + hat için kullanılacak WhatsApp access token (medya indirme / mesaj gönderme)."""
+    if not tenant_id or not supabase:
+        return META_TOKEN
+    try:
+        r = supabase.table("tenants").select(
+            "whatsapp_access_token, whatsapp_access_token_exchange"
+        ).eq("tenant_id", tenant_id).limit(1).execute()
+        if r.data and len(r.data) > 0:
+            row = r.data[0]
+            if line == "exchange" and row.get("whatsapp_access_token_exchange"):
+                return row.get("whatsapp_access_token_exchange")
+            if row.get("whatsapp_access_token"):
+                return row.get("whatsapp_access_token")
+    except Exception as e:
+        logger.warning(f"Tenant token: {e}")
+    return META_TOKEN
+
+def _download_whatsapp_media(media_id, access_token):
+    """Meta Graph API ile medya indir. access_token kullanır (tenant token olabilir). Returns bytes or None."""
+    if not media_id or not access_token:
+        return None
+    try:
+        url = f"https://graph.facebook.com/v21.0/{media_id}"
+        r = requests.get(url, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        media_url = data.get("url")
+        if not media_url:
+            return None
+        r2 = requests.get(media_url, headers={"Authorization": f"Bearer {access_token}"}, timeout=30)
+        r2.raise_for_status()
+        return r2.content
+    except Exception as e:
+        logger.warning(f"WhatsApp medya indirme: {e}")
+    return None
 
 def send_whatsapp_message(phone, text, tenant_id=None, line=None):
     """Meta API ile mesaj atar. tenant_id + line: line=exchange ise değişim hattı numarası ve token kullanılır."""
