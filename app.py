@@ -344,28 +344,12 @@ def test_page():
 
 @app.route('/')
 def home():
-    """Ana sayfa. PANEL_SKIP_LOGIN=1 ise direkt Panele Git; degilse Giriş yap."""
-    if PANEL_SKIP_LOGIN:
-        return (
-            "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Panel</title></head>"
-            "<body style='font-family:sans-serif;margin:0;min-height:100vh;background:#1e293b;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;'>"
-            "<div style='text-align:center;'>"
-            "<p style='background:#334155;color:#94a3b8;padding:8px 14px;border-radius:8px;font-size:0.9rem;margin-bottom:20px;'>Şifre kapalı – test modu. Panele tıklayın.</p>"
-            "<h1 style='margin-bottom:8px;'>Panel</h1>"
-            "<p style='color:#94a3b8;margin-bottom:24px;'>Sunucu çalışıyor.</p>"
-            "<a href='/dashboard' style='display:inline-block;padding:14px 28px;background:#2563eb;color:#fff;text-decoration:none;font-weight:600;border-radius:10px;'>Panele git</a>"
-            "</div></body></html>"
-        ), 200
-    return (
-        "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Panel</title></head>"
-        "<body style='font-family:sans-serif;margin:0;min-height:100vh;background:#1e293b;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;'>"
-        "<div style='text-align:center;'>"
-        "<h1 style='margin-bottom:8px;'>Panel</h1>"
-        "<p style='color:#94a3b8;margin-bottom:24px;'>Sunucu çalışıyor. Aşağıdaki linke tıkla.</p>"
-        "<a href='/login' style='display:inline-block;padding:14px 28px;background:#2563eb;color:#fff;text-decoration:none;font-weight:600;border-radius:10px;'>Giriş yap</a>"
-        "<p style='margin-top:20px;'><a href='/dashboard/integrations' style='color:#94a3b8;'>Entegrasyonlar (Trendyol)</a></p>"
-        "</div></body></html>"
-    ), 200
+    """Ana sayfa: web sitesi (landing) – Giriş, Kayıt ol, Panele git. Panel mantığına dokunulmaz."""
+    logged_in = bool(session.get("tenant_id"))
+    if PANEL_SKIP_LOGIN and not logged_in:
+        # Test modu: landing'de header'dan Panele git görünür; ekstra bilgi göstermek için
+        pass
+    return render_template("landing.html", logged_in=logged_in), 200
 
 # --- Yasal sayfalar (Sanal POS / Iyzico-PayTR basvurusu icin zorunlu)
 @app.route('/legal/privacy')
