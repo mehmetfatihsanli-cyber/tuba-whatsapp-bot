@@ -216,6 +216,30 @@ def get_analysis_summary_for_prompt(tenant_id, line, days=2):
     return None
 
 
+def get_analysis_summary_days(tenant_id):
+    """
+    Bu tenant için analiz özeti penceresi (gün). Paneldeki 2/7/14 seçimi burada kullanılır;
+    hem rapor hem modele giden özet bu süreyi kullanır. Yoksa env ANALYSIS_SUMMARY_DAYS, yoksa 2.
+    """
+    if not tenant_id or not supabase:
+        try:
+            return max(1, min(14, int(os.environ.get("ANALYSIS_SUMMARY_DAYS", "2"))))
+        except (ValueError, TypeError):
+            return 2
+    try:
+        r = supabase.table("tenants").select("analysis_summary_days").eq("tenant_id", tenant_id).limit(1).execute()
+        if r.data and len(r.data) > 0:
+            val = r.data[0].get("analysis_summary_days")
+            if val is not None:
+                return max(1, min(14, int(val)))
+    except Exception as e:
+        logger.debug(f"get_analysis_summary_days (tenant column may not exist): {e}")
+    try:
+        return max(1, min(14, int(os.environ.get("ANALYSIS_SUMMARY_DAYS", "2"))))
+    except (ValueError, TypeError):
+        return 2
+
+
 def get_tenant_bot_mode(tenant_id):
     """Tek mod (geriye uyumluluk): satış hattı modunu döner."""
     return get_tenant_bot_mode_for_line(tenant_id, "sales")
@@ -1467,6 +1491,38 @@ def api_analiz_raporu():
         return jsonify({"items": [], "summary": {"total": 0, "by_line": {}, "by_intent": {}, "by_sentiment": {}}})
 
 
+@app.route('/api/analiz-summary-days', methods=['GET'])
+def api_analiz_summary_days_get():
+    """Panel: Bu tenant için kayıtlı analiz özeti penceresi (2/7/14 gün). Rapor sayfası dropdown ile senkron."""
+    tenant = _panel_tenant()
+    if not tenant:
+        return jsonify({"error": "Giriş gerekli"}), 403
+    days = get_analysis_summary_days(tenant)
+    return jsonify({"days": days})
+
+
+@app.route('/api/analiz-summary-days', methods=['POST'])
+def api_analiz_summary_days_post():
+    """Panel: Analiz özeti penceresini kaydet (2/7/14). Hem rapor hem modele giden özet bu değeri kullanır."""
+    tenant = _panel_tenant()
+    if not tenant:
+        return jsonify({"error": "Giriş gerekli"}), 403
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        days = int(data.get("days", 2))
+        days = max(1, min(14, days))
+    except (TypeError, ValueError):
+        days = 2
+    if not supabase:
+        return jsonify({"success": False, "error": "Veritabanı yok"}), 503
+    try:
+        supabase.table("tenants").update({"analysis_summary_days": days}).eq("tenant_id", tenant).execute()
+        return jsonify({"success": True, "days": days})
+    except Exception as e:
+        logger.warning(f"analiz-summary-days POST: {e}")
+        return jsonify({"success": False, "error": "Kayıt güncellenemedi (tenants.analysis_summary_days kolonu ekli mi?)"}), 500
+
+
 @app.route('/api/handoffs', methods=['GET'])
 def api_handoffs():
     """Panel: Bu tenant için 'bot yetkiliye yönlendirdi' işaretli numaralar (manuel geçiş uyarısı)."""
@@ -1947,7 +2003,8 @@ def webhook_receive():
             # 4. AI'dan cevap + duygusal zeka analizi (sentiment, intent, urgency, reply)
             extra_instruction = get_tenant_extra_instruction(tenant_id)
             # Akıllanma: bu hat için son analiz özeti (sadece bu hattın verisi) prompt'a eklenir; satış→satış, değişim→değişim
-            analysis_summary = get_analysis_summary_for_prompt(tenant_id, line, days=2)
+            summary_days = get_analysis_summary_days(tenant_id)
+            analysis_summary = get_analysis_summary_for_prompt(tenant_id, line, days=summary_days)
             logger.info("[Webhook] AI cevap üretiliyor...")
             result = ai_assistant.mesaj_olustur(
                 musteri_mesaji=msg_body,

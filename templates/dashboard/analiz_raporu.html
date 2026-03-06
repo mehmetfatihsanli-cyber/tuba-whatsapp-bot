@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-5xl mx-auto">
     <h1 class="text-2xl font-semibold text-slate-800 mb-2">Dinleme Analiz Raporu</h1>
-    <p class="text-slate-500 text-sm mb-6">Dinle + Analiz modunda toplanan mesaj analizleri. Son <select id="days" class="border border-slate-300 rounded-lg px-2 py-1 text-sm"><option value="2">2</option><option value="3">3</option><option value="7">7</option><option value="14">14</option></select> gün.</p>
+    <p class="text-slate-500 text-sm mb-6">Dinle + Analiz modunda toplanan mesaj analizleri. Rapor ve modele giden özet: son <select id="days" class="border border-slate-300 rounded-lg px-2 py-1 text-sm"><option value="2">2</option><option value="3">3</option><option value="7">7</option><option value="14">14</option></select> gün. (Seçim kaydedilir; canlı yanıtlar bu dönemin özetini kullanır.)</p>
 
     <div id="summary" class="bg-white rounded-xl border border-slate-200 p-6 mb-6 hidden">
         <h2 class="font-semibold text-slate-800 mb-3">Özet</h2>
@@ -36,7 +36,7 @@
     var reportEl = document.getElementById('report-text');
     var summaryEl = document.getElementById('summary');
 
-    function load() {
+    function loadReport() {
         var days = daysEl ? daysEl.value : 2;
         reportEl.innerHTML = '<p class="text-slate-400">Yükleniyor…</p>';
         fetch('/api/analiz-raporu?days=' + days).then(function(r) { return r.json(); }).then(function(data) {
@@ -73,8 +73,28 @@
         });
     }
 
-    if (daysEl) daysEl.addEventListener('change', load);
-    load();
+    function onDaysChange() {
+        var days = daysEl ? daysEl.value : 2;
+        fetch('/api/analiz-summary-days', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ days: parseInt(days, 10) })
+        }).then(function(r) { return r.json(); }).then(function(res) {
+            if (res.success) loadReport();
+            else loadReport();
+        }).catch(function() { loadReport(); });
+    }
+
+    if (daysEl) {
+        daysEl.addEventListener('change', onDaysChange);
+    }
+    fetch('/api/analiz-summary-days').then(function(r) { return r.json(); }).then(function(data) {
+        if (data.days != null && daysEl) {
+            var v = String(data.days);
+            if ([2, 3, 7, 14].indexOf(data.days) !== -1) daysEl.value = v;
+        }
+        loadReport();
+    }).catch(function() { loadReport(); });
 })();
 </script>
 {% endblock %}
